@@ -1,0 +1,11 @@
+[package]
+name = "edbuffer"
+version = "0.1.0"
+authors = ["Evgeny Fomin <fominok@hotmail.com>"]
+edition = "2018"
+description = "Text editor buffer structure"
+
+[dependencies]
+ropey = "1.1.0"
+derive_more = "0.99.2"
+snafu = "0.6.2"

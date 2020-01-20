@@ -1,0 +1,4 @@
+This will be used to check how ropey represents empty lines
+
+Like that one above;
+This one is not empty though, but last and I didnt' end it explicitly with newline
