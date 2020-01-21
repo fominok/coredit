@@ -1,3 +1,4 @@
+pub mod selections;
 pub mod util;
 use crate::util::PositiveUsize;
 use ropey::Rope;
@@ -17,12 +18,8 @@ pub struct Buffer {
     rope: Rope,
 }
 
-struct Selection {
-    head: Position,
-    tail: Position,
-}
-
-struct Position {
+#[derive(Default)]
+pub struct Position {
     line: PositiveUsize,
     col: PositiveUsize,
 }

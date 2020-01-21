@@ -2,7 +2,7 @@
 use derive_more::{Add, Display, From, Into};
 use std::ops::Sub;
 
-#[derive(Add, Display, From, Into, Clone, Copy, Debug, PartialEq)]
+#[derive(Add, Display, From, Into, Clone, Copy, Debug, PartialEq, Default)]
 pub struct PositiveUsize(usize);
 
 impl Sub for PositiveUsize {
