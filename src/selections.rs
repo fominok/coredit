@@ -1,32 +1,24 @@
 //! Selections implementation
 use super::Position;
 use std::cmp::Ordering;
-use std::collections::HashMap;
-
-// implementation notes:
-//
-// selections are necessarily looks in one direction,
-// thus there are no any two selection for on of which
-// head is before tail and another with head after tail
-//
-// TOOD: maybe use BTreeMap with range to find a selection
-// which will be intersected with a new one on `add_selection`
+use std::collections::BTreeSet;
 
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 pub struct SelectionStorage {
-    indexed_selections: HashMap<usize, HashMap<usize, Selection>>,
+    selections_tree: BTreeSet<SelectionIntersect>,
 }
 
+/// For a fresh buffer there is only one selection in the beginning of it
 impl Default for SelectionStorage {
     fn default() -> Self {
-        let mut lines_hm = HashMap::new();
-        let mut cols_hm = HashMap::new();
-        cols_hm.insert(0, Default::default());
-        lines_hm.insert(0, cols_hm);
+        let selection: Selection = Default::default();
+        let mut tree = BTreeSet::new();
+        tree.insert(SelectionIntersect(selection));
+
         SelectionStorage {
-            indexed_selections: lines_hm,
+            selections_tree: tree,
         }
     }
 }
@@ -35,9 +27,15 @@ impl SelectionStorage {
     pub fn add_selection(&mut self, s: Selection) {
         todo!()
     }
+
+    fn find_hit(&self, s: Position) -> Option<&Selection> {
+        self.selections_tree
+            .get(&Selection::from(s).into())
+            .map(|si| &si.0)
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CursorDirection {
     Forward,
     Backward,
@@ -52,7 +50,7 @@ impl Default for CursorDirection {
 /// Selection simply is as pair of positions, which are
 /// pairs of line/column values. Note that there is no
 /// information about underlying text, words and even movements.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct Selection {
     head: Position,
     tail: Position,
@@ -68,7 +66,7 @@ impl Selection {
         }
     }
 
-    pub fn new_quick(
+    pub(crate) fn new_quick(
         head_line: usize,
         head_col: usize,
         tail_line: usize,
@@ -86,6 +84,24 @@ impl Selection {
             },
             cursor_direction: cursor_direction,
         }
+    }
+}
+
+/// Selection of length 1 is simply a cursor thus can be
+/// created from `Position` of it
+impl From<Position> for Selection {
+    fn from(position: Position) -> Self {
+        Selection {
+            head: position,
+            tail: position,
+            cursor_direction: CursorDirection::Forward,
+        }
+    }
+}
+
+impl From<Selection> for SelectionIntersect {
+    fn from(selection: Selection) -> Self {
+        SelectionIntersect(selection)
     }
 }
 
@@ -157,6 +173,70 @@ mod tests {
         let b = Selection::new_quick(87, 7, 88, 8, Default::default());
         let a = Selection::new_quick(88, 9, 105, 35, Default::default());
         assert!(SelectionIntersect(a) > SelectionIntersect(b))
+    }
+
+    fn gen_storage() -> SelectionStorage {
+        let mut storage: SelectionStorage = Default::default();
+        let mut tree = BTreeSet::new();
+        tree.insert(SelectionIntersect(Selection::new_quick(
+            1,
+            10,
+            1,
+            30,
+            Default::default(),
+        )));
+        tree.insert(SelectionIntersect(Selection::new_quick(
+            2,
+            10,
+            2,
+            30,
+            Default::default(),
+        )));
+        tree.insert(SelectionIntersect(Selection::new_quick(
+            3,
+            10,
+            5,
+            130,
+            Default::default(),
+        )));
+        storage.selections_tree = tree;
+
+        storage
+    }
+
+    #[test]
+    fn test_selection_storage_search_some() {
+        let storage = gen_storage();
+        assert_eq!(
+            *storage
+                .find_hit(Position {
+                    line: 3.into(),
+                    col: 100.into()
+                })
+                .unwrap(),
+            Selection {
+                head: Position {
+                    line: 3.into(),
+                    col: 10.into()
+                },
+                tail: Position {
+                    line: 5.into(),
+                    col: 130.into()
+                },
+                cursor_direction: CursorDirection::Forward,
+            }
+        );
+    }
+
+    #[test]
+    fn test_selection_storage_search_none() {
+        let storage = gen_storage();
+        assert!(storage
+            .find_hit(Position {
+                line: 2.into(),
+                col: 50.into()
+            })
+            .is_none());
     }
 
     #[test]

@@ -18,7 +18,7 @@ pub struct Buffer {
     rope: Rope,
 }
 
-#[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug)]
+#[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
     line: PositiveUsize,
     col: PositiveUsize,
