@@ -18,10 +18,16 @@ pub struct Buffer {
     rope: Rope,
 }
 
-#[derive(Default)]
+#[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug)]
 pub struct Position {
     line: PositiveUsize,
     col: PositiveUsize,
+}
+
+impl Position {
+    fn new(line: PositiveUsize, col: PositiveUsize) -> Self {
+        Position { line, col }
+    }
 }
 
 impl Buffer {
