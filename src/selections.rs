@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
+#[derive(Debug)]
 pub struct SelectionStorage {
     selections_tree: BTreeSet<SelectionIntersect>,
 }
@@ -24,14 +25,30 @@ impl Default for SelectionStorage {
 }
 
 impl SelectionStorage {
-    pub fn add_selection(&mut self, s: Selection) {
-        todo!()
+    pub fn add_selection(&mut self, mut ns: Selection) {
+        if let Some(s) = self.find_hit_take(ns.head) {
+            ns.head = s.head;
+            // Here is a recursive call to verify that the new selection
+            // has no overlaps
+            self.add_selection(ns);
+        } else if let Some(s) = self.find_hit_take(ns.tail) {
+            ns.tail = s.tail;
+            self.add_selection(ns);
+        } else {
+            self.selections_tree.insert(ns.into());
+        }
     }
 
     fn find_hit(&self, s: Position) -> Option<&Selection> {
         self.selections_tree
             .get(&Selection::from(s).into())
             .map(|si| &si.0)
+    }
+
+    fn find_hit_take(&mut self, s: Position) -> Option<Selection> {
+        self.selections_tree
+            .take(&Selection::from(s).into())
+            .map(|si| si.0)
     }
 }
 
@@ -88,7 +105,7 @@ impl Selection {
 }
 
 /// Selection of length 1 is simply a cursor thus can be
-/// created from `Position` of it
+/// created from [Position](../struct.Position.html) of it
 impl From<Position> for Selection {
     fn from(position: Position) -> Self {
         Selection {
@@ -105,6 +122,13 @@ impl From<Selection> for SelectionIntersect {
     }
 }
 
+impl From<SelectionIntersect> for Selection {
+    fn from(selection_intersect: SelectionIntersect) -> Self {
+        selection_intersect.0
+    }
+}
+
+#[derive(Debug)]
 struct SelectionIntersect(Selection);
 
 impl Eq for SelectionIntersect {}
@@ -240,5 +264,86 @@ mod tests {
     }
 
     #[test]
-    fn test_merge_forward() {}
+    fn test_merge_head() {
+        let mut storage = gen_storage();
+        let s = Selection::new_quick(2, 25, 2, 100, Default::default());
+        storage.add_selection(s);
+
+        // Unwrapped from newtype to provide intuitive comparison
+        let selections_vec: Vec<Selection> = storage
+            .selections_tree
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let selections_reference_vec = vec![
+            Selection::new_quick(1, 10, 1, 30, Default::default()),
+            Selection::new_quick(2, 10, 2, 100, Default::default()),
+            Selection::new_quick(3, 10, 5, 130, Default::default()),
+        ];
+
+        assert_eq!(selections_vec, selections_reference_vec);
+    }
+
+    #[test]
+    fn test_merge_tail() {
+        let mut storage = gen_storage();
+        let s = Selection::new_quick(2, 50, 4, 20, Default::default());
+        storage.add_selection(s);
+
+        // Unwrapped from newtype to provide intuitive comparison
+        let selections_vec: Vec<Selection> = storage
+            .selections_tree
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let selections_reference_vec = vec![
+            Selection::new_quick(1, 10, 1, 30, Default::default()),
+            Selection::new_quick(2, 10, 2, 30, Default::default()),
+            Selection::new_quick(2, 50, 5, 130, Default::default()),
+        ];
+
+        assert_eq!(selections_vec, selections_reference_vec);
+    }
+
+    #[test]
+    fn test_merge_miss() {
+        let mut storage = gen_storage();
+        let s = Selection::new_quick(2, 40, 3, 5, Default::default());
+        storage.add_selection(s);
+
+        // Unwrapped from newtype to provide intuitive comparison
+        let selections_vec: Vec<Selection> = storage
+            .selections_tree
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let selections_reference_vec = vec![
+            Selection::new_quick(1, 10, 1, 30, Default::default()),
+            Selection::new_quick(2, 10, 2, 30, Default::default()),
+            Selection::new_quick(2, 40, 3, 5, Default::default()),
+            Selection::new_quick(3, 10, 5, 130, Default::default()),
+        ];
+
+        assert_eq!(selections_vec, selections_reference_vec);
+    }
+
+    #[test]
+    fn test_merge_both() {
+        let mut storage = gen_storage();
+        let s = Selection::new_quick(2, 20, 3, 20, Default::default());
+        storage.add_selection(s);
+
+        // Unwrapped from newtype to provide intuitive comparison
+        let selections_vec: Vec<Selection> = storage
+            .selections_tree
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let selections_reference_vec = vec![
+            Selection::new_quick(1, 10, 1, 30, Default::default()),
+            Selection::new_quick(2, 10, 5, 130, Default::default()),
+        ];
+
+        assert_eq!(selections_vec, selections_reference_vec);
+    }
 }
