@@ -2,6 +2,10 @@
 mod storage;
 use crate::util::PositiveUsize;
 
+// TODO:
+// think of what to do if moved to the beginning of the line,
+// perhaps it would be good to return remaining chars to go
+
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
     line: PositiveUsize,
@@ -124,11 +128,69 @@ mod tests {
 
     #[test]
     fn test_movements_straight_ahead() {
-        let mut forward = Selection::new_quick(5, 10, 6, 20, CursorDirection::Forward);
+        let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
         forward.edit(0, 25, true);
         assert_eq!(
             forward,
-            Selection::new_quick(5, 10, 6, 45, CursorDirection::Forward)
+            Selection::new_quick(4, 10, 6, 45, CursorDirection::Forward)
+        );
+
+        let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
+        backward.edit(0, -5, true);
+        assert_eq!(
+            backward,
+            Selection::new_quick(4, 5, 6, 20, CursorDirection::Backward)
+        );
+    }
+
+    #[test]
+    fn test_movements_shrink() {
+        let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
+        forward.edit(-1, 0, true);
+        assert_eq!(
+            forward,
+            Selection::new_quick(4, 10, 5, 20, CursorDirection::Forward)
+        );
+
+        let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
+        backward.edit(1, 5, true);
+        assert_eq!(
+            backward,
+            Selection::new_quick(5, 15, 6, 20, CursorDirection::Backward)
+        );
+    }
+
+    #[test]
+    fn test_movements_reverse() {
+        let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
+        forward.edit(-3, 10, true);
+        assert_eq!(
+            forward,
+            Selection::new_quick(3, 30, 4, 10, CursorDirection::Backward)
+        );
+
+        let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
+        backward.edit(2, 25, true);
+        assert_eq!(
+            backward,
+            Selection::new_quick(6, 20, 6, 35, CursorDirection::Forward)
+        );
+    }
+
+    #[test]
+    fn test_non_expand() {
+        let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
+        forward.edit(0, 1, false);
+        assert_eq!(
+            forward,
+            Selection::new_quick(6, 21, 6, 21, CursorDirection::Forward)
+        );
+
+        let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
+        backward.edit(-2, -5, false);
+        assert_eq!(
+            backward,
+            Selection::new_quick(2, 5, 2, 5, CursorDirection::Forward)
         );
     }
 }
