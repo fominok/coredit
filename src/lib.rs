@@ -18,18 +18,6 @@ pub struct Buffer {
     rope: Rope,
 }
 
-#[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
-pub struct Position {
-    line: PositiveUsize,
-    col: PositiveUsize,
-}
-
-impl Position {
-    fn new(line: PositiveUsize, col: PositiveUsize) -> Self {
-        Position { line, col }
-    }
-}
-
 impl Buffer {
     pub fn empty() -> Self {
         Buffer {
@@ -47,14 +35,4 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-
-    #[test]
-    fn just_check_how_lines_work() {
-        let file = File::open("test_data/three_lines_with_empty.txt").unwrap();
-        let buf = Buffer::from_reader(file).unwrap();
-        for line in buf.rope.lines() {
-            dbg!(line.len_bytes());
-        }
-    }
 }
