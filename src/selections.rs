@@ -88,19 +88,19 @@ impl Selection {
         }
     }
 
-    pub(crate) fn edit(&mut self, dline: isize, dcol: isize, extend: bool) {
+    pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
         match self.cursor_direction {
             CursorDirection::Forward => {
-                self.tail.line = self.tail.line.delta(dline);
-                self.tail.col = self.tail.col.delta(dcol);
+                self.tail.line = PositiveUsize::new(line);
+                self.tail.col = PositiveUsize::new(col);
                 if !extend {
                     self.head = self.tail;
                     self.cursor_direction = CursorDirection::Forward;
                 }
             }
             CursorDirection::Backward => {
-                self.head.line = self.head.line.delta(dline);
-                self.head.col = self.head.col.delta(dcol);
+                self.head.line = PositiveUsize::new(line);
+                self.head.col = PositiveUsize::new(col);
                 if !extend {
                     self.tail = self.head;
                     self.cursor_direction = CursorDirection::Forward;
@@ -128,16 +128,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_movements_straight_ahead() {
+    fn test_set_straight_ahead() {
         let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
-        forward.edit(0, 25, true);
+        forward.set(6, 45, true);
         assert_eq!(
             forward,
             Selection::new_quick(4, 10, 6, 45, CursorDirection::Forward)
         );
 
         let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
-        backward.edit(0, -5, true);
+        backward.set(4, 5, true);
         assert_eq!(
             backward,
             Selection::new_quick(4, 5, 6, 20, CursorDirection::Backward)
@@ -145,16 +145,16 @@ mod tests {
     }
 
     #[test]
-    fn test_movements_shrink() {
+    fn test_set_shrink() {
         let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
-        forward.edit(-1, 0, true);
+        forward.set(5, 20, true);
         assert_eq!(
             forward,
             Selection::new_quick(4, 10, 5, 20, CursorDirection::Forward)
         );
 
         let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
-        backward.edit(1, 5, true);
+        backward.set(5, 15, true);
         assert_eq!(
             backward,
             Selection::new_quick(5, 15, 6, 20, CursorDirection::Backward)
@@ -162,16 +162,16 @@ mod tests {
     }
 
     #[test]
-    fn test_movements_reverse() {
+    fn test_set_reverse() {
         let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
-        forward.edit(-3, 10, true);
+        forward.set(3, 30, true);
         assert_eq!(
             forward,
             Selection::new_quick(3, 30, 4, 10, CursorDirection::Backward)
         );
 
         let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
-        backward.edit(2, 25, true);
+        backward.set(6, 35, true);
         assert_eq!(
             backward,
             Selection::new_quick(6, 20, 6, 35, CursorDirection::Forward)
@@ -181,14 +181,14 @@ mod tests {
     #[test]
     fn test_non_expand() {
         let mut forward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
-        forward.edit(0, 1, false);
+        forward.set(6, 21, false);
         assert_eq!(
             forward,
             Selection::new_quick(6, 21, 6, 21, CursorDirection::Forward)
         );
 
         let mut backward = Selection::new_quick(4, 10, 6, 20, CursorDirection::Backward);
-        backward.edit(-2, -5, false);
+        backward.set(2, 5, false);
         assert_eq!(
             backward,
             Selection::new_quick(2, 5, 2, 5, CursorDirection::Forward)

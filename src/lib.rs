@@ -1,6 +1,6 @@
+#[allow(dead_code)]
 pub mod selections;
 pub mod util;
-use crate::util::PositiveUsize;
 use ropey::Rope;
 use snafu::{ResultExt, Snafu};
 use std::io;
@@ -37,6 +37,4 @@ pub(crate) trait LineLengh {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

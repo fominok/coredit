@@ -25,13 +25,13 @@ impl PositiveUsize {
         value.into()
     }
 
-    pub fn delta(self, value: isize) -> Self {
-        if value < 0 {
-            self - PositiveUsize((-value) as usize)
-        } else {
-            self + PositiveUsize(value as usize)
-        }
-    }
+    //pub fn delta(self, value: isize) -> Self {
+    //    if value < 0 {
+    //        self - PositiveUsize((-value) as usize)
+    //    } else {
+    //        self + PositiveUsize(value as usize)
+    //    }
+    //}
 }
 
 #[cfg(test)]

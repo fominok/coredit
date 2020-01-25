@@ -1,5 +1,5 @@
-use crate::{LineLengh};
-use super::{CursorDirection, Position, Selection};
+use super::{Position, Selection};
+use crate::LineLengh;
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
@@ -8,14 +8,14 @@ use std::collections::BTreeSet;
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 #[derive(Debug)]
-pub(crate) struct SelectionStorage<'a, T: LineLengh> {
+pub(crate) struct SelectionStorage<'a, L: LineLengh> {
     selections_tree: BTreeSet<SelectionIntersect>,
-    line_length: &'a T,
+    line_length: &'a L,
 }
 
-impl<'a, T: LineLengh> SelectionStorage<'a, T> {
+impl<'a, L: LineLengh> SelectionStorage<'a, L> {
     /// For a fresh buffer there is only one selection in the beginning of it
-    pub fn new<'b: 'a>(line_length: &'b T) -> Self {
+    pub fn new<'b: 'a>(line_length: &'b L) -> Self {
         let selection: Selection = Default::default();
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
@@ -98,6 +98,7 @@ impl Ord for SelectionIntersect {
 
 #[cfg(test)]
 mod tests {
+    use super::super::CursorDirection;
     use super::*;
     use std::collections::HashMap;
 
@@ -142,8 +143,8 @@ mod tests {
         }
     }
 
-    fn gen_storage<'a, 'b: 'a, T: LineLengh>(line_length: &'b T) -> SelectionStorage<'a, T> {
-        let mut storage: SelectionStorage<T> = SelectionStorage::new(line_length);
+    fn gen_storage<'a, 'b: 'a, L: LineLengh>(line_length: &'b L) -> SelectionStorage<'a, L> {
+        let mut storage: SelectionStorage<L> = SelectionStorage::new(line_length);
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(Selection::new_quick(
             1,
