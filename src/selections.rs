@@ -5,6 +5,7 @@ use crate::util::PositiveUsize;
 // TODO:
 // think of what to do if moved to the beginning of the line,
 // perhaps it would be good to return remaining chars to go
+// or finally link it with text
 
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {

@@ -32,6 +32,10 @@ impl Buffer {
     }
 }
 
+pub(crate) trait LineLengh {
+    fn lengh(&self, line: usize) -> usize;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

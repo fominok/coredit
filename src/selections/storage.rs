@@ -1,3 +1,4 @@
+use crate::{LineLengh};
 use super::{CursorDirection, Position, Selection};
 
 use std::cmp::Ordering;
@@ -7,24 +8,23 @@ use std::collections::BTreeSet;
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 #[derive(Debug)]
-pub struct SelectionStorage {
+pub(crate) struct SelectionStorage<'a, T: LineLengh> {
     selections_tree: BTreeSet<SelectionIntersect>,
+    line_length: &'a T,
 }
 
-/// For a fresh buffer there is only one selection in the beginning of it
-impl Default for SelectionStorage {
-    fn default() -> Self {
+impl<'a, T: LineLengh> SelectionStorage<'a, T> {
+    /// For a fresh buffer there is only one selection in the beginning of it
+    pub fn new<'b: 'a>(line_length: &'b T) -> Self {
         let selection: Selection = Default::default();
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
 
         SelectionStorage {
             selections_tree: tree,
+            line_length: line_length,
         }
     }
-}
-
-impl SelectionStorage {
     pub fn add_selection(&mut self, mut ns: Selection) {
         if let Some(s) = self.find_hit_take(ns.head) {
             ns.head = s.head;
@@ -99,6 +99,7 @@ impl Ord for SelectionIntersect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_selection_intersect_partial_eq_forward() {
@@ -135,8 +136,14 @@ mod tests {
         assert!(SelectionIntersect(a) > SelectionIntersect(b))
     }
 
-    fn gen_storage() -> SelectionStorage {
-        let mut storage: SelectionStorage = Default::default();
+    impl LineLengh for HashMap<usize, usize> {
+        fn lengh(&self, line: usize) -> usize {
+            self.get(&line).map(|x| *x).unwrap_or(0 as usize)
+        }
+    }
+
+    fn gen_storage<'a, 'b: 'a, T: LineLengh>(line_length: &'b T) -> SelectionStorage<'a, T> {
+        let mut storage: SelectionStorage<T> = SelectionStorage::new(line_length);
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(Selection::new_quick(
             1,
@@ -166,7 +173,8 @@ mod tests {
 
     #[test]
     fn test_selection_storage_search_some() {
-        let storage = gen_storage();
+        let hm = HashMap::new();
+        let storage = gen_storage(&hm);
         assert_eq!(
             *storage
                 .find_hit(Position {
@@ -190,7 +198,8 @@ mod tests {
 
     #[test]
     fn test_selection_storage_search_none() {
-        let storage = gen_storage();
+        let hm = HashMap::new();
+        let storage = gen_storage(&hm);
         assert!(storage
             .find_hit(Position {
                 line: 2.into(),
@@ -201,7 +210,8 @@ mod tests {
 
     #[test]
     fn test_merge_head() {
-        let mut storage = gen_storage();
+        let hm = HashMap::new();
+        let mut storage = gen_storage(&hm);
         let s = Selection::new_quick(2, 25, 2, 100, Default::default());
         storage.add_selection(s);
 
@@ -222,7 +232,8 @@ mod tests {
 
     #[test]
     fn test_merge_tail() {
-        let mut storage = gen_storage();
+        let hm = HashMap::new();
+        let mut storage = gen_storage(&hm);
         let s = Selection::new_quick(2, 50, 4, 20, Default::default());
         storage.add_selection(s);
 
@@ -243,7 +254,8 @@ mod tests {
 
     #[test]
     fn test_merge_miss() {
-        let mut storage = gen_storage();
+        let hm = HashMap::new();
+        let mut storage = gen_storage(&hm);
         let s = Selection::new_quick(2, 40, 3, 5, Default::default());
         storage.add_selection(s);
 
@@ -265,7 +277,8 @@ mod tests {
 
     #[test]
     fn test_merge_both() {
-        let mut storage = gen_storage();
+        let hm = HashMap::new();
+        let mut storage = gen_storage(&hm);
         let s = Selection::new_quick(2, 20, 3, 20, Default::default());
         storage.add_selection(s);
 
