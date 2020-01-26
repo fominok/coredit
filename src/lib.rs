@@ -33,7 +33,15 @@ impl Buffer {
 }
 
 pub(crate) trait LineLengh {
-    fn lengh(&self, line: usize) -> usize;
+    fn lengh(&self, line: usize) -> Option<usize>;
+}
+
+use std::collections::HashMap;
+#[cfg(test)]
+impl LineLengh for HashMap<usize, usize> {
+    fn lengh(&self, line: usize) -> Option<usize> {
+        self.get(&line).map(|x| *x)
+    }
 }
 
 #[cfg(test)]

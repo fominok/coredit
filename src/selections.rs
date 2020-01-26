@@ -1,6 +1,7 @@
 //! Selections implementation
 mod storage;
 use crate::util::PositiveUsize;
+use crate::LineLengh;
 
 // TODO:
 // think of what to do if moved to the beginning of the line,
@@ -109,6 +110,37 @@ impl Selection {
         }
         self.fix_direction();
     }
+
+    pub(crate) fn get_cursor(&self) -> &Position {
+        match self.cursor_direction {
+            CursorDirection::Forward => &self.tail,
+            CursorDirection::Backward => &self.head,
+        }
+    }
+
+    pub(crate) fn get_cursor_mut(&mut self) -> &mut Position {
+        match self.cursor_direction {
+            CursorDirection::Forward => &mut self.tail,
+            CursorDirection::Backward => &mut self.head,
+        }
+    }
+
+    pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
+        let cursor = self.get_cursor_mut();
+        while n > 0 {
+            if n > cursor.col.into() {
+                let line_length = line_length
+                    .lengh(Into::<usize>::into(cursor.line) - 1)
+                    .unwrap();
+                n -= Into::<usize>::into(cursor.col);
+                cursor.col = line_length.into();
+                cursor.line.sub_assign(1);
+            } else {
+                cursor.col.sub_assign(n);
+                break;
+            }
+        }
+    }
 }
 
 /// Selection of length 1 is simply a cursor thus can be
@@ -126,6 +158,7 @@ impl From<Position> for Selection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_set_straight_ahead() {
@@ -194,4 +227,41 @@ mod tests {
             Selection::new_quick(2, 5, 2, 5, CursorDirection::Forward)
         );
     }
+
+    #[test]
+    fn test_move_left_one_line() {
+        let line_length = HashMap::new();
+        let mut selection = Selection::new_quick(4, 10, 6, 20, CursorDirection::Forward);
+        selection.move_left(5, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(4, 10, 6, 15, CursorDirection::Forward),
+        );
+    }
+
+    #[test]
+    fn test_move_left_multiple_lines() {
+        let mut line_length = HashMap::new();
+        line_length.insert(6, 322);
+        line_length.insert(5, 40);
+        line_length.insert(4, 30);
+        let mut selection = Selection::new_quick(2, 20, 6, 20, CursorDirection::Forward);
+        selection.move_left(80, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(2, 20, 4, 10, CursorDirection::Forward),
+        );
+    }
+
+    #[test]
+    fn test_move_left_multiple_lines_until_beginning() {}
+
+    #[test]
+    fn test_move_left_one_line_until_beginning() {}
+
+    #[test]
+    fn test_move_left_one_empty_line() {}
+
+    #[test]
+    fn test_move_left_multiple_lines_reversed() {}
 }

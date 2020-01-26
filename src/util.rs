@@ -1,9 +1,9 @@
 //! Utility structures not strongly connected to text editing
 use derive_more::{Add, AddAssign, Display, From, Into};
-use std::ops::Sub;
+use std::ops::{Sub, SubAssign};
 
 #[derive(
-    Add, Display, From, Into, Clone, Copy, Debug, PartialEq, Default, Eq, Ord, PartialOrd, AddAssign,
+    Add, Display, Into, Clone, Copy, Debug, PartialEq, Default, Eq, Ord, PartialOrd, AddAssign,
 )]
 pub struct PositiveUsize(usize);
 
@@ -19,19 +19,22 @@ impl Sub for PositiveUsize {
     }
 }
 
+impl From<usize> for PositiveUsize {
+    fn from(value: usize) -> Self {
+        assert!(value > 0);
+        PositiveUsize(value)
+    }
+}
+
 impl PositiveUsize {
     pub fn new(value: usize) -> Self {
         assert!(value > 0);
-        value.into()
+        PositiveUsize(value)
     }
 
-    //pub fn delta(self, value: isize) -> Self {
-    //    if value < 0 {
-    //        self - PositiveUsize((-value) as usize)
-    //    } else {
-    //        self + PositiveUsize(value as usize)
-    //    }
-    //}
+    pub fn sub_assign(&mut self, value: usize) {
+        *self = *self - PositiveUsize(value as usize)
+    }
 }
 
 #[cfg(test)]

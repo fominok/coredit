@@ -13,6 +13,11 @@ pub(crate) struct SelectionStorage<'a, L: LineLengh> {
     line_length: &'a L,
 }
 
+pub struct MoveModifier {
+    extend: bool,
+    n: isize,
+}
+
 impl<'a, L: LineLengh> SelectionStorage<'a, L> {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub fn new<'b: 'a>(line_length: &'b L) -> Self {
@@ -49,6 +54,27 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
         self.selections_tree
             .take(&Selection::from(s).into())
             .map(|si| si.0)
+    }
+
+    pub fn move_selections_char(&mut self, m: MoveModifier) {
+        let mut selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        let selections_new: BTreeSet<SelectionIntersect> = selections_old
+            .into_iter()
+            .map(|si| {
+                let selection = &si.0;
+                let mut cursor = selection.get_cursor();
+                if m.n < 0 {
+                    // Moving left
+                    let mut remaining = m.n as usize;
+                    let line_length = self.line_length.lengh(cursor.line.into()).unwrap();
+                    if remaining > line_length {}
+                } else {
+                    // Moving right
+                }
+                si // FIXME
+            })
+            .collect();
+        self.selections_tree = selections_new;
     }
 }
 
@@ -135,12 +161,6 @@ mod tests {
         let b = Selection::new_quick(87, 7, 88, 8, Default::default());
         let a = Selection::new_quick(88, 9, 105, 35, Default::default());
         assert!(SelectionIntersect(a) > SelectionIntersect(b))
-    }
-
-    impl LineLengh for HashMap<usize, usize> {
-        fn lengh(&self, line: usize) -> usize {
-            self.get(&line).map(|x| *x).unwrap_or(0 as usize)
-        }
     }
 
     fn gen_storage<'a, 'b: 'a, L: LineLengh>(line_length: &'b L) -> SelectionStorage<'a, L> {
