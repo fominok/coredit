@@ -129,17 +129,21 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         while n > 0 {
             if n > cursor.col.into() {
-                let line_length = line_length
-                    .lengh(Into::<usize>::into(cursor.line) - 1)
-                    .unwrap();
-                n -= Into::<usize>::into(cursor.col);
-                cursor.col = line_length.into();
-                cursor.line.sub_assign(1);
+                if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line) - 1) {
+                    n -= Into::<usize>::into(cursor.col);
+                    cursor.col = line_length.into();
+                    cursor.line.sub_assign(1);
+                } else {
+                    cursor.col = 1.into();
+                    cursor.line = 1.into();
+                    break;
+                }
             } else {
                 cursor.col.sub_assign(n);
                 break;
             }
         }
+        self.fix_direction();
     }
 }
 
@@ -254,14 +258,57 @@ mod tests {
     }
 
     #[test]
-    fn test_move_left_multiple_lines_until_beginning() {}
+    fn test_move_left_multiple_lines_until_beginning() {
+        let mut line_length = HashMap::new();
+        line_length.insert(6, 322);
+        line_length.insert(5, 40);
+        line_length.insert(4, 30);
+        line_length.insert(3, 30);
+        line_length.insert(2, 30);
+        line_length.insert(1, 30);
+        let mut selection = Selection::new_quick(2, 20, 6, 20, CursorDirection::Backward);
+        selection.move_left(1337, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(1, 1, 6, 20, CursorDirection::Backward),
+        );
+    }
 
     #[test]
-    fn test_move_left_one_line_until_beginning() {}
+    fn test_move_left_one_line_until_beginning() {
+        let mut line_length = HashMap::new();
+        line_length.insert(1, 322);
+        let mut selection = Selection::new_quick(1, 20, 1, 70, CursorDirection::Backward);
+        selection.move_left(1337, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(1, 1, 1, 70, CursorDirection::Backward),
+        );
+    }
 
     #[test]
-    fn test_move_left_one_empty_line() {}
+    fn test_move_left_one_empty_line() {
+        let mut line_length = HashMap::new();
+        line_length.insert(1, 1);
+        let mut selection = Selection::new_quick(1, 1, 1, 1, CursorDirection::Forward);
+        selection.move_left(1337, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(1, 1, 1, 1, CursorDirection::Forward),
+        );
+    }
 
     #[test]
-    fn test_move_left_multiple_lines_reversed() {}
+    fn test_move_left_multiple_lines_reversed() {
+        let mut line_length = HashMap::new();
+        line_length.insert(6, 322);
+        line_length.insert(5, 40);
+        line_length.insert(4, 30);
+        let mut selection = Selection::new_quick(5, 20, 6, 20, CursorDirection::Forward);
+        selection.move_left(80, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(4, 10, 5, 20, CursorDirection::Backward),
+        );
+    }
 }
