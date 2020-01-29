@@ -9,3 +9,6 @@ description = "Text editor buffer structure"
 ropey = "1.1.0"
 derive_more = "0.99.2"
 snafu = "0.6.2"
+
+[dev-dependencies]
+pretty_assertions = "0.6.1"
