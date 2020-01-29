@@ -3,11 +3,8 @@ mod storage;
 use crate::util::PositiveUsize;
 use crate::LineLengh;
 
-// TODO:
-// think of what to do if moved to the beginning of the line,
-// perhaps it would be good to return remaining chars to go
-// or finally link it with text
-
+/// A position in a text buffer represented by 1-based numbered
+/// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
     line: PositiveUsize,
@@ -20,9 +17,13 @@ impl Position {
     }
 }
 
+/// For selection the head must be less than the tail, but
+/// cursor position can be specified with CursorDirection.
 #[derive(Debug, PartialEq)]
 pub enum CursorDirection {
+    /// Tail is also a cursor
     Forward,
+    /// Head is also a cursor
     Backward,
 }
 
@@ -33,7 +34,8 @@ impl Default for CursorDirection {
 }
 
 impl CursorDirection {
-    pub(crate) fn reverse(&mut self) {
+    /// Get an opposite direction
+    pub(crate) fn inverse(&mut self) {
         match self {
             CursorDirection::Forward => *self = CursorDirection::Backward,
             CursorDirection::Backward => *self = CursorDirection::Forward,
@@ -42,8 +44,7 @@ impl CursorDirection {
 }
 
 /// Selection simply is as pair of positions, which are
-/// pairs of line/column values. Note that there is no
-/// information about underlying text, words and even movements.
+/// pairs of line/column values.
 #[derive(Default, Debug, PartialEq)]
 pub struct Selection {
     head: Position,
@@ -60,6 +61,7 @@ impl Selection {
         }
     }
 
+    /// A shortcut to create Position instances in place.
     pub(crate) fn new_quick(
         head_line: usize,
         head_col: usize,
@@ -80,15 +82,17 @@ impl Selection {
         }
     }
 
-    // If something was moved too much and became reversed
-    // let's fix head/tail and change direction
+    /// If something was moved too much and became reversed
+    /// let's fix head/tail and change direction
     fn fix_direction(&mut self) {
         if self.head > self.tail {
             std::mem::swap(&mut self.head, &mut self.tail);
-            self.cursor_direction.reverse();
+            self.cursor_direction.inverse();
         }
     }
 
+    /// As movements can be complicated, setting, on the contrary,
+    /// is an assignment of a cursor to an existing position
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
         match self.cursor_direction {
             CursorDirection::Forward => {
@@ -111,6 +115,7 @@ impl Selection {
         self.fix_direction();
     }
 
+    /// Get cursor reference
     pub(crate) fn get_cursor(&self) -> &Position {
         match self.cursor_direction {
             CursorDirection::Forward => &self.tail,
@@ -118,6 +123,7 @@ impl Selection {
         }
     }
 
+    /// Get cursor mutable reference for inplace operations
     pub(crate) fn get_cursor_mut(&mut self) -> &mut Position {
         match self.cursor_direction {
             CursorDirection::Forward => &mut self.tail,
@@ -125,6 +131,7 @@ impl Selection {
         }
     }
 
+    /// Move cursor left by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
         let cursor = self.get_cursor_mut();
         while n > 0 {
@@ -146,6 +153,7 @@ impl Selection {
         self.fix_direction();
     }
 
+    /// Move cursor right by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;

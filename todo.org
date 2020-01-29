@@ -1,0 +1,14 @@
+* Implement
+** Movements
+*** Selections
+Up/Down movements
+Exend or not
+*** Selection storage
+Unify over 4 directions and provide LineLength
+*** Words
+This one is tough and requires actually link with underlying rope
+and provide a layer to compute chars to move. Also it may require a
+config layer to setup what the word actually is
+*** Paragraphs
+Mostly the same, but should it provide different interface for many types
+of text objects; is number of text object classes limited?
