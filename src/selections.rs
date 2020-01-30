@@ -157,7 +157,7 @@ impl Selection {
     pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
-        while n > 0 {
+        while n >= 0 {
             if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
                 let remaining = line_length - Into::<usize>::into(cursor.col);
                 if n > remaining {
@@ -422,6 +422,18 @@ mod tests {
         assert_eq!(
             selection,
             Selection::new_quick(6, 20, 7, 10, CursorDirection::Forward),
+        );
+    }
+
+    #[test]
+    fn test_move_right_one_in_the_end() {
+        let mut line_length = HashMap::new();
+        line_length.insert(1, 30);
+        let mut selection = Selection::new_quick(1, 10, 1, 30, CursorDirection::Forward);
+        selection.move_right(1, &line_length);
+        assert_eq!(
+            selection,
+            Selection::new_quick(1, 10, 1, 30, CursorDirection::Forward),
         );
     }
 }
