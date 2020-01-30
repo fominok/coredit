@@ -134,7 +134,7 @@ impl Selection {
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
         let cursor = self.get_cursor_mut();
-        while n > 0 {
+        loop {
             if n > cursor.col.into() {
                 if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line) - 1) {
                     n -= Into::<usize>::into(cursor.col);
@@ -157,7 +157,7 @@ impl Selection {
     pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
-        while n >= 0 {
+        loop {
             if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
                 let remaining = line_length - Into::<usize>::into(cursor.col);
                 if n > remaining {
