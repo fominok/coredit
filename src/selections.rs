@@ -179,6 +179,12 @@ impl Selection {
         }
         self.fix_direction();
     }
+
+    pub(crate) fn move_up<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
+        let cursor = self.get_cursor_mut();
+        cursor.line.sub_assign(1);
+        self.fix_direction();
+    }
 }
 
 /// Selection of length 1 is simply a cursor thus can be
