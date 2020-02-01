@@ -52,14 +52,16 @@ pub struct Selection {
     head: Position,
     tail: Position,
     cursor_direction: CursorDirection,
+    sticky_column: Option<PositiveUsize>,
 }
 
 impl Selection {
     pub fn new(head: Position, tail: Position, cursor_direction: CursorDirection) -> Self {
         Selection {
-            head,
-            tail,
-            cursor_direction,
+            head: head,
+            tail: tail,
+            cursor_direction: cursor_direction,
+            sticky_column: None,
         }
     }
 
@@ -81,7 +83,13 @@ impl Selection {
                 col: tail_col.into(),
             },
             cursor_direction: cursor_direction,
+            sticky_column: None,
         }
+    }
+
+    pub(crate) fn with_sticky(mut self, sticky: usize) -> Self {
+        self.sticky_column = Some(sticky.into());
+        self
     }
 
     /// If something was moved too much and became reversed
@@ -181,8 +189,23 @@ impl Selection {
     }
 
     pub(crate) fn move_up<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
-        let cursor = self.get_cursor_mut();
+        let cursor: &mut Position = self.get_cursor_mut();
         cursor.line.sub_assign(1);
+        if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
+            if line_length < Into::<usize>::into(cursor.col) {
+                let sticky_column = Some(cursor.col);
+                cursor.col = line_length.into();
+                self.sticky_column = sticky_column;
+            } else {
+                //if let Some(sticky_column) = self.sticky_column {
+                //	      cursor.col = sticky_column.into();
+                //	      self.sticky_column= None;
+                //  }
+                let kek = self.sticky_column.unwrap();
+                cursor.col = kek.into();
+                self.sticky_column = None;
+            }
+        }
         self.fix_direction();
     }
 }
@@ -195,6 +218,7 @@ impl From<Position> for Selection {
             head: position,
             tail: position,
             cursor_direction: CursorDirection::Forward,
+            sticky_column: None,
         }
     }
 }

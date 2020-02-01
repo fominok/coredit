@@ -36,6 +36,7 @@ pub(crate) trait LineLengh {
     fn lengh(&self, line: usize) -> Option<usize>;
 }
 
+#[cfg(test)]
 use std::collections::HashMap;
 #[cfg(test)]
 impl LineLengh for HashMap<usize, usize> {

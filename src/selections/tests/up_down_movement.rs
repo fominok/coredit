@@ -39,7 +39,7 @@ fn test_move_up_preserve_column() {
     selection.move_up(1, &line_length);
     assert_eq!(
         selection,
-        Selection::new_quick(4, 30, 5, 10, CursorDirection::Backward),
+        Selection::new_quick(4, 30, 5, 10, CursorDirection::Backward).with_sticky(40),
     );
 
     // On the next move it should return to its sticky postition if line is long enough

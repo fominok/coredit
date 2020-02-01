@@ -202,6 +202,7 @@ mod tests {
                     col: 130.into()
                 },
                 cursor_direction: CursorDirection::Forward,
+                sticky_column: None,
             }
         );
     }

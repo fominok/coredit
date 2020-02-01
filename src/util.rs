@@ -1,6 +1,6 @@
 //! Utility structures not strongly connected to text editing
-use derive_more::{Add, AddAssign, Display, From, Into};
-use std::ops::{Sub, SubAssign};
+use derive_more::{Add, AddAssign, Display, Into};
+use std::ops::Sub;
 
 #[derive(
     Add, Display, Into, Clone, Copy, Debug, PartialEq, Default, Eq, Ord, PartialOrd, AddAssign,
