@@ -214,6 +214,8 @@ impl Selection {
         }
         self.fix_direction();
     }
+
+    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, line_length: &T) {}
 }
 
 /// Selection of length 1 is simply a cursor thus can be
