@@ -68,13 +68,13 @@ fn test_move_up_drop_column_on_left_right() {
     selection.move_left(1, &line_length);
     assert_eq!(
         selection,
-        Selection::new_quick(4, 29, 5, 10, CursorDirection::Backward).with_sticky(40),
+        Selection::new_quick(4, 29, 5, 10, CursorDirection::Backward),
     );
 
     // On the next move it should retain its column as was moved left
     selection.move_up(1, &line_length);
     assert_eq!(
         selection,
-        Selection::new_quick(3, 40, 5, 10, CursorDirection::Backward),
+        Selection::new_quick(3, 29, 5, 10, CursorDirection::Backward),
     );
 }

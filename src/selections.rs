@@ -101,6 +101,11 @@ impl Selection {
         }
     }
 
+    /// Left or right movement should drop sticky column
+    fn drop_sticky(&mut self) {
+        self.sticky_column = None;
+    }
+
     /// As movements can be complicated, setting, on the contrary,
     /// is an assignment of a cursor to an existing position
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
@@ -123,6 +128,7 @@ impl Selection {
             }
         }
         self.fix_direction();
+        self.drop_sticky();
     }
 
     /// Get cursor reference
@@ -161,6 +167,7 @@ impl Selection {
             }
         }
         self.fix_direction();
+        self.drop_sticky();
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
@@ -186,6 +193,7 @@ impl Selection {
             }
         }
         self.fix_direction();
+        self.drop_sticky();
     }
 
     pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, line_length: &T) {
