@@ -15,11 +15,6 @@ pub(crate) struct SelectionStorage<'a, L: LineLengh> {
     line_length: &'a L,
 }
 
-pub struct MoveModifier {
-    extend: bool,
-    n: isize,
-}
-
 impl<'a, L: LineLengh> SelectionStorage<'a, L> {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub fn new<'b: 'a>(line_length: &'b L) -> Self {
@@ -58,15 +53,7 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
             .map(|si| si.0)
     }
 
-    //pub fn move_selections_char(&mut self, m: MoveModifier) {
-    //    todo!();
-    //    let mut selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-    //    let selections_new: BTreeSet<SelectionIntersect> = selections_old
-    //        .into_iter()
-    //        .map(|si| {})
-    //        .collect();
-    //    self.selections_tree = selections_new;
-    //}
+    pub fn move_left(&mut self, n: usize, extend: bool) {}
 }
 
 impl From<Selection> for SelectionIntersect {
