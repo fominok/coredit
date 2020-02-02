@@ -34,6 +34,7 @@ impl Buffer {
 
 pub(crate) trait LineLengh {
     fn lengh(&self, line: usize) -> Option<usize>;
+    fn count(&self) -> usize;
 }
 
 #[cfg(test)]
@@ -42,6 +43,10 @@ use std::collections::HashMap;
 impl LineLengh for HashMap<usize, usize> {
     fn lengh(&self, line: usize) -> Option<usize> {
         self.get(&line).map(|x| *x)
+    }
+
+    fn count(&self) -> usize {
+        *self.keys().max().unwrap_or(&0)
     }
 }
 

@@ -199,7 +199,7 @@ impl Selection {
     pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, line_length: &T) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
-        cursor.line.sub_assign(1);
+        cursor.line.sub_assign(n);
         if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
             if line_length < Into::<usize>::into(cursor.col) {
                 let sticky_column = Some(cursor.col);
@@ -215,7 +215,32 @@ impl Selection {
         self.fix_direction();
     }
 
-    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, line_length: &T) {}
+    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, line_length: &T) {
+        let current_sticky_column = self.sticky_column;
+        let cursor = self.get_cursor_mut();
+        let target: usize = Into::<usize>::into(cursor.line) + n;
+        let lines_count = line_length.count();
+        if target > lines_count {
+            cursor.line = lines_count.into();
+        } else {
+            cursor.line.add_assign(n);
+        }
+        if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
+            if line_length < Into::<usize>::into(cursor.col) {
+                let sticky_column = Some(cursor.col);
+                cursor.col = line_length.into();
+                self.sticky_column = sticky_column;
+            } else {
+                if let Some(sticky_column) = current_sticky_column {
+                    cursor.col = sticky_column.into();
+                    self.sticky_column = None;
+                }
+            }
+        } else {
+            cursor.line.sub_assign(1);
+        }
+        self.fix_direction();
+    }
 }
 
 /// Selection of length 1 is simply a cursor thus can be

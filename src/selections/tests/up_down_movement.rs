@@ -16,14 +16,16 @@ fn test_move_up_enough_length() {
 }
 
 #[test]
-fn test_move_up_first_line() {
+fn test_move_up_until_first_line() {
     let mut line_length = HashMap::new();
     line_length.insert(1, 40);
-    let mut selection = Selection::new_quick(1, 10, 1, 20, CursorDirection::Forward);
-    selection.move_up(1, &line_length);
+    line_length.insert(2, 40);
+    line_length.insert(3, 40);
+    let mut selection = Selection::new_quick(3, 10, 3, 20, CursorDirection::Forward);
+    selection.move_up(322, &line_length);
     assert_eq!(
         selection,
-        Selection::new_quick(1, 10, 1, 20, CursorDirection::Forward),
+        Selection::new_quick(1, 20, 3, 10, CursorDirection::Backward),
     );
 }
 
@@ -93,15 +95,16 @@ fn test_move_down_enough_length() {
 }
 
 #[test]
-fn test_move_down_last_line() {
+fn test_move_down_until_last_line() {
     let mut line_length = HashMap::new();
     line_length.insert(1, 40);
     line_length.insert(2, 50);
-    let mut selection = Selection::new_quick(1, 10, 2, 20, CursorDirection::Forward);
-    selection.move_down(1, &line_length);
+    line_length.insert(3, 50);
+    let mut selection = Selection::new_quick(1, 10, 1, 20, CursorDirection::Forward);
+    selection.move_down(420, &line_length);
     assert_eq!(
         selection,
-        Selection::new_quick(1, 10, 2, 20, CursorDirection::Forward),
+        Selection::new_quick(1, 10, 3, 20, CursorDirection::Forward),
     );
 }
 
