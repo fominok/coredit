@@ -196,6 +196,9 @@ impl Selection {
         self.drop_sticky();
     }
 
+    /// Move cursor up by n lines, handling line lengthes and buffer bounds;
+    /// If line is shorter, then previous column is preserved as sticky column
+    /// and will be restored on enough lenth.
     pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, line_length: &T) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
