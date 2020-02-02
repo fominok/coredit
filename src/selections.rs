@@ -106,6 +106,20 @@ impl Selection {
         self.sticky_column = None;
     }
 
+    /// If not extend then drop selection to 1-length
+    fn drop_selection(&mut self) {
+        match self.cursor_direction {
+            CursorDirection::Forward => {
+                self.head = self.tail;
+                self.cursor_direction = CursorDirection::Forward;
+            }
+            CursorDirection::Backward => {
+                self.tail = self.head;
+                self.cursor_direction = CursorDirection::Forward;
+            }
+        }
+    }
+
     /// As movements can be complicated, setting, on the contrary,
     /// is an assignment of a cursor to an existing position
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
@@ -148,7 +162,7 @@ impl Selection {
     }
 
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
+    pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, extend: bool, line_length: &T) {
         let cursor = self.get_cursor_mut();
         loop {
             if n > cursor.col.into() {
@@ -168,10 +182,13 @@ impl Selection {
         }
         self.fix_direction();
         self.drop_sticky();
+        if !extend {
+            self.drop_selection();
+        }
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, line_length: &T) {
+    pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, extend: bool, line_length: &T) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
@@ -194,12 +211,15 @@ impl Selection {
         }
         self.fix_direction();
         self.drop_sticky();
+        if !extend {
+            self.drop_selection();
+        }
     }
 
     /// Move cursor up by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, line_length: &T) {
+    pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, extend: bool, line_length: &T) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
@@ -216,12 +236,15 @@ impl Selection {
             }
         }
         self.fix_direction();
+        if !extend {
+            self.drop_selection();
+        }
     }
 
     /// Move cursor down by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, line_length: &T) {
+    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, extend: bool, line_length: &T) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = Into::<usize>::into(cursor.line) + n;
@@ -246,6 +269,9 @@ impl Selection {
             cursor.line.sub_assign(1);
         }
         self.fix_direction();
+        if !extend {
+            self.drop_selection();
+        }
     }
 }
 
