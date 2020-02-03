@@ -53,7 +53,27 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
             .map(|si| si.0)
     }
 
-    pub fn move_left(&mut self, n: usize, extend: bool) {}
+    fn move_selections_char<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut Selection) -> (),
+    {
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        let selections_new: BTreeSet<SelectionIntersect> = selections_old
+            .into_iter()
+            .map(|mut si| {
+                f(&mut si.0);
+                si
+            })
+            .collect();
+        self.selections_tree = selections_new;
+    }
+
+    pub fn move_left(&mut self, n: usize, extend: bool) {
+        let line_length = self.line_length;
+        self.move_selections_char(|s| {
+            s.move_left(n, extend, line_length);
+        });
+    }
 }
 
 impl From<Selection> for SelectionIntersect {
