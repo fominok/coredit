@@ -58,6 +58,7 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
         F: FnMut(&mut Selection) -> (),
     {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        // Well this one is awful but I see no other way to do it without intermediate vec
         let selections_new: BTreeSet<SelectionIntersect> = selections_old
             .into_iter()
             .map(|mut si| {
@@ -72,6 +73,13 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
         let line_length = self.line_length;
         self.move_selections_char(|s| {
             s.move_left(n, extend, line_length);
+        });
+    }
+
+    pub fn move_right(&mut self, n: usize, extend: bool) {
+        let line_length = self.line_length;
+        self.move_selections_char(|s| {
+            s.move_right(n, extend, line_length);
         });
     }
 }
