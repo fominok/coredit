@@ -32,9 +32,11 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
             ns.head = s.head;
             // Here is a recursive call to verify that the new selection
             // has no overlaps
+            ns.drop_sticky();
             self.add_selection(ns);
         } else if let Some(s) = self.find_hit_take(ns.tail) {
             ns.tail = s.tail;
+            ns.drop_sticky();
             self.add_selection(ns);
         } else {
             self.selections_tree.insert(ns.into());

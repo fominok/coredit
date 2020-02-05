@@ -233,3 +233,27 @@ fn test_move_up_intersection() {
 
     assert_eq!(selections_vec, selections_reference_vec);
 }
+
+#[test]
+fn test_move_up_intersection_sticky() {
+    let mut line_length = HashMap::new();
+    line_length.insert(1, 8);
+    line_length.insert(2, 4);
+    line_length.insert(3, 8);
+    let mut storage = gen_storage_from_tuples(
+        &vec![(2, 2, 2, 4, false), (3, 7, 3, 8, false)],
+        &line_length,
+    );
+
+    storage.move_up(1, true);
+
+    let selections_vec: Vec<Selection> = storage
+        .selections_tree
+        .iter()
+        .map(|x| x.0.clone())
+        .collect();
+    let selections_reference_vec =
+        vec![Selection::new_quick(1, 2, 3, 8, CursorDirection::Backward)];
+
+    assert_eq!(selections_vec, selections_reference_vec);
+}
