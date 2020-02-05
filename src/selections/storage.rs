@@ -82,6 +82,20 @@ impl<'a, L: LineLengh> SelectionStorage<'a, L> {
             s.move_right(n, extend, line_length);
         });
     }
+
+    pub fn move_up(&mut self, n: usize, extend: bool) {
+        let line_length = self.line_length;
+        self.move_selections_char(|s| {
+            s.move_up(n, extend, line_length);
+        });
+    }
+
+    pub fn move_down(&mut self, n: usize, extend: bool) {
+        let line_length = self.line_length;
+        self.move_selections_char(|s| {
+            s.move_down(n, extend, line_length);
+        });
+    }
 }
 
 impl From<Selection> for SelectionIntersect {

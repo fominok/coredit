@@ -54,3 +54,64 @@ fn test_move_right_no_intersections() {
 
     assert_eq!(selections_vec, selections_reference_vec);
 }
+
+#[test]
+fn test_move_down_no_intersections() {
+    let mut line_length = HashMap::new();
+    line_length.insert(1, 200);
+    line_length.insert(2, 200);
+    line_length.insert(3, 200);
+    line_length.insert(4, 200);
+    line_length.insert(5, 200);
+    line_length.insert(6, 200);
+    let mut storage = gen_storage(&line_length);
+
+    storage.move_down(1, false);
+
+    let selections_vec: Vec<Selection> = storage
+        .selections_tree
+        .into_iter()
+        .map(|x| x.into())
+        .collect();
+    let selections_reference_vec = vec![
+        Selection::new_quick(2, 30, 2, 30, Default::default()),
+        Selection::new_quick(3, 30, 3, 30, Default::default()),
+        Selection::new_quick(6, 130, 6, 130, Default::default()),
+    ];
+
+    assert_eq!(selections_vec, selections_reference_vec);
+}
+
+#[test]
+fn test_move_up_no_intersections() {
+    let mut line_length = HashMap::new();
+    line_length.insert(1, 200);
+    line_length.insert(2, 200);
+    line_length.insert(3, 200);
+    line_length.insert(4, 200);
+    line_length.insert(5, 200);
+    line_length.insert(6, 200);
+    let mut storage = gen_storage_from_tuples(
+        &vec![
+            (4, 30, 4, 30, true),
+            (5, 30, 5, 30, true),
+            (8, 130, 8, 130, true),
+        ],
+        &line_length,
+    );
+
+    storage.move_up(2, false);
+
+    let selections_vec: Vec<Selection> = storage
+        .selections_tree
+        .into_iter()
+        .map(|x| x.into())
+        .collect();
+    let selections_reference_vec = vec![
+        Selection::new_quick(2, 30, 2, 30, Default::default()),
+        Selection::new_quick(3, 30, 3, 30, Default::default()),
+        Selection::new_quick(6, 130, 6, 130, Default::default()),
+    ];
+
+    assert_eq!(selections_vec, selections_reference_vec);
+}
