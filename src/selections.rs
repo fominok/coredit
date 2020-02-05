@@ -21,7 +21,7 @@ impl Position {
 
 /// For selection the head must be less than the tail, but
 /// cursor position can be specified with CursorDirection.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum CursorDirection {
     /// Tail is also a cursor
     Forward,
@@ -47,7 +47,7 @@ impl CursorDirection {
 
 /// Selection simply is as pair of positions, which are
 /// pairs of line/column values.
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Selection {
     head: Position,
     tail: Position,
