@@ -1,12 +1,12 @@
 #[allow(dead_code)]
 pub mod selections;
 pub mod util;
+use crate::selections::storage::SelectionStorage;
 use ropey::Rope;
 use snafu::{ResultExt, Snafu};
-use std::io;
-use crate::selections::storage::SelectionStorage;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::io;
+use std::rc::Rc;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -19,7 +19,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Buffer {
     rope: Rc<RefCell<Rope>>,
-    selection_storage: SelectionStorage<Rc<RefCell<Rope>>>,
+    //    selection_storage: SelectionStorage<Rc<RefCell<Rope>>>,
 }
 
 impl Buffer {
@@ -31,7 +31,9 @@ impl Buffer {
 
     pub fn from_reader<R: io::Read>(reader: R) -> Result<Self> {
         Ok(Buffer {
-            rope: Rc::new(RefCell::new(Rope::from_reader(reader).context(CreateFromReader)?)),
+            rope: Rc::new(RefCell::new(
+                Rope::from_reader(reader).context(CreateFromReader)?,
+            )),
         })
     }
 }

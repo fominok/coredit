@@ -2,9 +2,12 @@ mod merge;
 mod movements;
 use super::*;
 use crate::selections::CursorDirection;
+use std::ops::Deref;
 
-fn gen_storage<'a, 'b: 'a, L: LineLengh>(line_length: &'b L) -> SelectionStorage<'a, L> {
-    let mut storage: SelectionStorage<L> = SelectionStorage::new(line_length);
+fn gen_storage<L: LineLengh, D: Deref<Target = L> + Copy>(
+    line_length: D,
+) -> SelectionStorage<L, D> {
+    let mut storage = SelectionStorage::new(line_length);
     let mut tree = BTreeSet::new();
     tree.insert(SelectionIntersect(Selection::new_quick(
         1,
@@ -34,11 +37,11 @@ fn gen_storage<'a, 'b: 'a, L: LineLengh>(line_length: &'b L) -> SelectionStorage
 
 type SelectionQuick = (usize, usize, usize, usize, bool);
 
-fn gen_storage_from_tuples<'a, 'b: 'a, L: LineLengh>(
+fn gen_storage_from_tuples<L: LineLengh, D: Deref<Target = L> + Copy>(
     selections: &[SelectionQuick],
-    line_length: &'b L,
-) -> SelectionStorage<'a, L> {
-    let mut storage: SelectionStorage<L> = SelectionStorage::new(line_length);
+    line_length: D,
+) -> SelectionStorage<L, D> {
+    let mut storage = SelectionStorage::new(line_length);
     let mut tree = BTreeSet::new();
     for s in selections {
         tree.insert(SelectionIntersect(Selection::new_quick(

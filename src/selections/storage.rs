@@ -5,19 +5,20 @@ mod tests;
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+use std::ops::Deref;
 
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 #[derive(Debug)]
-pub(crate) struct SelectionStorage<'a, L: LineLengh> {
+pub(crate) struct SelectionStorage<L: LineLengh, D: Deref<Target = L> + Copy> {
     selections_tree: BTreeSet<SelectionIntersect>,
-    line_length: &'a L,
+    line_length: D,
 }
 
-impl<'a, L: LineLengh> SelectionStorage<'a, L> {
+impl<L: LineLengh, D: Deref<Target = L> + Copy> SelectionStorage<L, D> {
     /// For a fresh buffer there is only one selection in the beginning of it
-    pub fn new<'b: 'a>(line_length: &'b L) -> Self {
+    pub fn new(line_length: D) -> Self {
         let selection: Selection = Default::default();
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));

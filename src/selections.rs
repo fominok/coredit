@@ -2,6 +2,7 @@
 pub(crate) mod storage;
 use crate::util::PositiveUsize;
 use crate::LineLengh;
+use std::ops::Deref;
 #[cfg(test)]
 mod tests;
 
@@ -162,11 +163,17 @@ impl Selection {
     }
 
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_left<T: LineLengh>(&mut self, mut n: usize, extend: bool, line_length: &T) {
+    pub(crate) fn move_left<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        mut n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         let cursor = self.get_cursor_mut();
         loop {
             if n > cursor.col.into() {
-                if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line) - 1) {
+                if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line) - 1)
+                {
                     n -= Into::<usize>::into(cursor.col);
                     cursor.col = line_length.into();
                     cursor.line.sub_assign(1);
@@ -188,7 +195,12 @@ impl Selection {
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_right<T: LineLengh>(&mut self, mut n: usize, extend: bool, line_length: &T) {
+    pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        mut n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
@@ -219,7 +231,12 @@ impl Selection {
     /// Move cursor up by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_up<T: LineLengh>(&mut self, n: usize, extend: bool, line_length: &T) {
+    pub(crate) fn move_up<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
@@ -244,7 +261,12 @@ impl Selection {
     /// Move cursor down by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_down<T: LineLengh>(&mut self, n: usize, extend: bool, line_length: &T) {
+    pub(crate) fn move_down<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = Into::<usize>::into(cursor.line) + n;
