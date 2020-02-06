@@ -1,5 +1,5 @@
 //! Selections implementation
-mod storage;
+pub(crate) mod storage;
 use crate::util::PositiveUsize;
 use crate::LineLengh;
 #[cfg(test)]
@@ -166,7 +166,7 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         loop {
             if n > cursor.col.into() {
-                if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line) - 1) {
+                if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line) - 1) {
                     n -= Into::<usize>::into(cursor.col);
                     cursor.col = line_length.into();
                     cursor.line.sub_assign(1);
@@ -192,7 +192,7 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
-            if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
+            if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
                 let remaining = line_length - Into::<usize>::into(cursor.col);
                 if n > remaining {
                     cursor.col.add_assign(remaining);
@@ -223,7 +223,7 @@ impl Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
-        if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
+        if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
             if line_length < Into::<usize>::into(cursor.col) {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
@@ -254,7 +254,7 @@ impl Selection {
         } else {
             cursor.line.add_assign(n);
         }
-        if let Some(line_length) = line_length.lengh(Into::<usize>::into(cursor.line)) {
+        if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
             if line_length < Into::<usize>::into(cursor.col) {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
