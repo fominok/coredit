@@ -19,26 +19,40 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Buffer {
     rope: Rc<RefCell<Rope>>,
-    //    selection_storage: SelectionStorage<Rc<RefCell<Rope>>>,
+    selection_storage: SelectionStorage<RefCell<Rope>, Rc<RefCell<Rope>>>,
 }
 
 impl Buffer {
     pub fn empty() -> Self {
+        let rope = Rc::new(RefCell::new(Rope::from_str("")));
         Buffer {
-            rope: Rc::new(RefCell::new(Rope::from_str(""))),
+            rope: rope.clone(),
+            selection_storage: SelectionStorage::new(rope),
         }
     }
 
     pub fn from_reader<R: io::Read>(reader: R) -> Result<Self> {
+        let rope = Rc::new(RefCell::new(
+            Rope::from_reader(reader).context(CreateFromReader)?,
+        ));
         Ok(Buffer {
-            rope: Rc::new(RefCell::new(
-                Rope::from_reader(reader).context(CreateFromReader)?,
-            )),
+            rope: rope.clone(),
+            selection_storage: SelectionStorage::new(rope),
         })
     }
 }
 
 impl LineLengh for Rope {
+    fn length(&self, line: usize) -> Option<usize> {
+        todo!()
+    }
+
+    fn count(&self) -> usize {
+        todo!()
+    }
+}
+
+impl<L: LineLengh> LineLengh for RefCell<L> {
     fn length(&self, line: usize) -> Option<usize> {
         todo!()
     }

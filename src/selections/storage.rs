@@ -11,12 +11,12 @@ use std::ops::Deref;
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 #[derive(Debug)]
-pub(crate) struct SelectionStorage<L: LineLengh, D: Deref<Target = L> + Copy> {
+pub(crate) struct SelectionStorage<L: LineLengh, D: Deref<Target = L> + Clone> {
     selections_tree: BTreeSet<SelectionIntersect>,
     line_length: D,
 }
 
-impl<L: LineLengh, D: Deref<Target = L> + Copy> SelectionStorage<L, D> {
+impl<L: LineLengh, D: Deref<Target = L> + Clone> SelectionStorage<L, D> {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub fn new(line_length: D) -> Self {
         let selection: Selection = Default::default();
@@ -69,30 +69,30 @@ impl<L: LineLengh, D: Deref<Target = L> + Copy> SelectionStorage<L, D> {
     }
 
     pub fn move_left(&mut self, n: usize, extend: bool) {
-        let line_length = self.line_length;
-        self.move_selections_char(|s| {
-            s.move_left(n, extend, line_length);
+        let line_length: D = self.line_length.clone();
+        self.move_selections_char(move |s| {
+            s.move_left(n, extend, line_length.deref());
         });
     }
 
     pub fn move_right(&mut self, n: usize, extend: bool) {
-        let line_length = self.line_length;
-        self.move_selections_char(|s| {
-            s.move_right(n, extend, line_length);
+        let line_length: D = self.line_length.clone();
+        self.move_selections_char(move |s| {
+            s.move_right(n, extend, line_length.deref());
         });
     }
 
     pub fn move_up(&mut self, n: usize, extend: bool) {
-        let line_length = self.line_length;
-        self.move_selections_char(|s| {
-            s.move_up(n, extend, line_length);
+        let line_length: D = self.line_length.clone();
+        self.move_selections_char(move |s| {
+            s.move_up(n, extend, line_length.deref());
         });
     }
 
     pub fn move_down(&mut self, n: usize, extend: bool) {
-        let line_length = self.line_length;
-        self.move_selections_char(|s| {
-            s.move_down(n, extend, line_length);
+        let line_length: D = self.line_length.clone();
+        self.move_selections_char(move |s| {
+            s.move_down(n, extend, line_length.deref());
         });
     }
 }
