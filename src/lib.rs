@@ -19,15 +19,15 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Buffer {
     rope: Rc<RefCell<Rope>>,
-    selection_storage: SelectionStorage<RefCell<Rope>, Rc<RefCell<Rope>>>,
+    selection_storage: SelectionStorage,
 }
 
 impl Buffer {
     pub fn empty() -> Self {
         let rope = Rc::new(RefCell::new(Rope::from_str("")));
         Buffer {
-            rope: rope.clone(),
-            selection_storage: SelectionStorage::new(rope),
+            rope: rope,
+            selection_storage: SelectionStorage::new(),
         }
     }
 
@@ -36,8 +36,8 @@ impl Buffer {
             Rope::from_reader(reader).context(CreateFromReader)?,
         ));
         Ok(Buffer {
-            rope: rope.clone(),
-            selection_storage: SelectionStorage::new(rope),
+            rope: rope,
+            selection_storage: SelectionStorage::new(),
         })
     }
 }

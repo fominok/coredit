@@ -4,10 +4,8 @@ use super::*;
 use crate::selections::CursorDirection;
 use std::ops::Deref;
 
-fn gen_storage<L: LineLengh, D: Deref<Target = L> + Copy>(
-    line_length: D,
-) -> SelectionStorage<L, D> {
-    let mut storage = SelectionStorage::new(line_length);
+fn gen_storage() -> SelectionStorage {
+    let mut storage = SelectionStorage::new();
     let mut tree = BTreeSet::new();
     tree.insert(SelectionIntersect(Selection::new_quick(
         1,
@@ -37,11 +35,8 @@ fn gen_storage<L: LineLengh, D: Deref<Target = L> + Copy>(
 
 type SelectionQuick = (usize, usize, usize, usize, bool);
 
-fn gen_storage_from_tuples<L: LineLengh, D: Deref<Target = L> + Copy>(
-    selections: &[SelectionQuick],
-    line_length: D,
-) -> SelectionStorage<L, D> {
-    let mut storage = SelectionStorage::new(line_length);
+fn gen_storage_from_tuples(selections: &[SelectionQuick]) -> SelectionStorage {
+    let mut storage = SelectionStorage::new();
     let mut tree = BTreeSet::new();
     for s in selections {
         tree.insert(SelectionIntersect(Selection::new_quick(

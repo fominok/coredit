@@ -40,8 +40,7 @@ fn test_selection_intersect_ord_gt() {
 
 #[test]
 fn test_selection_storage_search_some() {
-    let hm = HashMap::new();
-    let storage = gen_storage(&hm);
+    let storage = gen_storage();
     assert_eq!(
         *storage
             .find_hit(Position {
@@ -66,8 +65,7 @@ fn test_selection_storage_search_some() {
 
 #[test]
 fn test_selection_storage_search_none() {
-    let hm = HashMap::new();
-    let storage = gen_storage(&hm);
+    let storage = gen_storage();
     assert!(storage
         .find_hit(Position {
             line: 2.into(),
@@ -78,8 +76,7 @@ fn test_selection_storage_search_none() {
 
 #[test]
 fn test_merge_head() {
-    let hm = HashMap::new();
-    let mut storage = gen_storage(&hm);
+    let mut storage = gen_storage();
     let s = Selection::new_quick(2, 25, 2, 100, Default::default());
     storage.add_selection(s);
 
@@ -100,8 +97,7 @@ fn test_merge_head() {
 
 #[test]
 fn test_merge_tail() {
-    let hm = HashMap::new();
-    let mut storage = gen_storage(&hm);
+    let mut storage = gen_storage();
     let s = Selection::new_quick(2, 50, 4, 20, Default::default());
     storage.add_selection(s);
 
@@ -122,8 +118,7 @@ fn test_merge_tail() {
 
 #[test]
 fn test_merge_miss() {
-    let hm = HashMap::new();
-    let mut storage = gen_storage(&hm);
+    let mut storage = gen_storage();
     let s = Selection::new_quick(2, 40, 3, 5, Default::default());
     storage.add_selection(s);
 
@@ -145,8 +140,7 @@ fn test_merge_miss() {
 
 #[test]
 fn test_merge_both() {
-    let hm = HashMap::new();
-    let mut storage = gen_storage(&hm);
+    let mut storage = gen_storage();
     let s = Selection::new_quick(2, 20, 3, 20, Default::default());
     storage.add_selection(s);
 

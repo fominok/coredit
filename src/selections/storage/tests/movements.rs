@@ -12,9 +12,9 @@ fn test_move_left_no_intersections() {
     line_length.insert(3, 200);
     line_length.insert(4, 200);
     line_length.insert(5, 200);
-    let mut storage = gen_storage(&line_length);
+    let mut storage = gen_storage();
 
-    storage.move_left(10, false);
+    storage.move_left(10, false, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -38,9 +38,9 @@ fn test_move_right_no_intersections() {
     line_length.insert(3, 200);
     line_length.insert(4, 200);
     line_length.insert(5, 200);
-    let mut storage = gen_storage(&line_length);
+    let mut storage = gen_storage();
 
-    storage.move_right(10, false);
+    storage.move_right(10, false, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -65,9 +65,9 @@ fn test_move_down_no_intersections() {
     line_length.insert(4, 200);
     line_length.insert(5, 200);
     line_length.insert(6, 200);
-    let mut storage = gen_storage(&line_length);
+    let mut storage = gen_storage();
 
-    storage.move_down(1, false);
+    storage.move_down(1, false, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -92,16 +92,13 @@ fn test_move_up_no_intersections() {
     line_length.insert(4, 200);
     line_length.insert(5, 200);
     line_length.insert(6, 200);
-    let mut storage = gen_storage_from_tuples(
-        &vec![
-            (4, 30, 4, 30, true),
-            (5, 30, 5, 30, true),
-            (8, 130, 8, 130, true),
-        ],
-        &line_length,
-    );
+    let mut storage = gen_storage_from_tuples(&vec![
+        (4, 30, 4, 30, true),
+        (5, 30, 5, 30, true),
+        (8, 130, 8, 130, true),
+    ]);
 
-    storage.move_up(2, false);
+    storage.move_up(2, false, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -123,10 +120,9 @@ fn test_move_left_intersection() {
     line_length.insert(1, 9);
     line_length.insert(2, 9);
     line_length.insert(3, 9);
-    let mut storage =
-        gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)], &line_length);
+    let mut storage = gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)]);
 
-    storage.move_left(12, true);
+    storage.move_left(12, true, &line_length);
 
     // They are right one after another but not intersected yet
     let selections_vec: Vec<Selection> = storage
@@ -142,7 +138,7 @@ fn test_move_left_intersection() {
     assert_eq!(selections_vec, selections_reference_vec);
 
     // And move a little more
-    storage.move_left(1, true);
+    storage.move_left(1, true, &line_length);
     let selections_vec: Vec<Selection> = storage
         .selections_tree
         .into_iter()
@@ -160,10 +156,9 @@ fn test_move_right_intersection() {
     line_length.insert(1, 9);
     line_length.insert(2, 9);
     line_length.insert(3, 9);
-    let mut storage =
-        gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)], &line_length);
+    let mut storage = gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)]);
 
-    storage.move_right(9, true);
+    storage.move_right(9, true, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -181,10 +176,9 @@ fn test_move_down_intersection() {
     line_length.insert(1, 9);
     line_length.insert(2, 9);
     line_length.insert(3, 9);
-    let mut storage =
-        gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)], &line_length);
+    let mut storage = gen_storage_from_tuples(&vec![(1, 3, 1, 5, true), (2, 5, 2, 7, true)]);
 
-    storage.move_down(9, true);
+    storage.move_down(9, true, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -203,10 +197,9 @@ fn test_move_up_intersection() {
     line_length.insert(2, 9);
     line_length.insert(3, 9);
     line_length.insert(4, 9);
-    let mut storage =
-        gen_storage_from_tuples(&vec![(3, 3, 3, 5, true), (4, 5, 4, 7, true)], &line_length);
+    let mut storage = gen_storage_from_tuples(&vec![(3, 3, 3, 5, true), (4, 5, 4, 7, true)]);
 
-    storage.move_up(1, true);
+    storage.move_up(1, true, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -220,7 +213,7 @@ fn test_move_up_intersection() {
 
     assert_eq!(selections_vec, selections_reference_vec);
 
-    storage.move_up(1, true);
+    storage.move_up(1, true, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree
@@ -240,12 +233,9 @@ fn test_move_up_intersection_sticky() {
     line_length.insert(1, 8);
     line_length.insert(2, 4);
     line_length.insert(3, 8);
-    let mut storage = gen_storage_from_tuples(
-        &vec![(2, 2, 2, 4, false), (3, 7, 3, 8, false)],
-        &line_length,
-    );
+    let mut storage = gen_storage_from_tuples(&vec![(2, 2, 2, 4, false), (3, 7, 3, 8, false)]);
 
-    storage.move_up(1, true);
+    storage.move_up(1, true, &line_length);
 
     let selections_vec: Vec<Selection> = storage
         .selections_tree

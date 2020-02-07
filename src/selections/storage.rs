@@ -11,21 +11,19 @@ use std::ops::Deref;
 /// (can be merged, for instance) this structure is aimed
 /// to take special care of it
 #[derive(Debug)]
-pub(crate) struct SelectionStorage<L: LineLengh, D: Deref<Target = L> + Clone> {
+pub(crate) struct SelectionStorage {
     selections_tree: BTreeSet<SelectionIntersect>,
-    line_length: D,
 }
 
-impl<L: LineLengh, D: Deref<Target = L> + Clone> SelectionStorage<L, D> {
+impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
-    pub fn new(line_length: D) -> Self {
+    pub fn new() -> Self {
         let selection: Selection = Default::default();
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
 
         SelectionStorage {
             selections_tree: tree,
-            line_length: line_length,
         }
     }
     pub fn add_selection(&mut self, mut ns: Selection) {
@@ -68,29 +66,45 @@ impl<L: LineLengh, D: Deref<Target = L> + Clone> SelectionStorage<L, D> {
         }
     }
 
-    pub fn move_left(&mut self, n: usize, extend: bool) {
-        let line_length: D = self.line_length.clone();
+    pub fn move_left<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         self.move_selections_char(move |s| {
             s.move_left(n, extend, line_length.deref());
         });
     }
 
-    pub fn move_right(&mut self, n: usize, extend: bool) {
-        let line_length: D = self.line_length.clone();
+    pub fn move_right<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         self.move_selections_char(move |s| {
             s.move_right(n, extend, line_length.deref());
         });
     }
 
-    pub fn move_up(&mut self, n: usize, extend: bool) {
-        let line_length: D = self.line_length.clone();
+    pub fn move_up<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         self.move_selections_char(move |s| {
             s.move_up(n, extend, line_length.deref());
         });
     }
 
-    pub fn move_down(&mut self, n: usize, extend: bool) {
-        let line_length: D = self.line_length.clone();
+    pub fn move_down<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: D,
+    ) {
         self.move_selections_char(move |s| {
             s.move_down(n, extend, line_length.deref());
         });
