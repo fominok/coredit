@@ -17,7 +17,7 @@ pub(crate) struct SelectionStorage {
 
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let selection: Selection = Default::default();
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
@@ -26,7 +26,7 @@ impl SelectionStorage {
             selections_tree: tree,
         }
     }
-    pub fn add_selection(&mut self, mut ns: Selection) {
+    pub(crate) fn add_selection(&mut self, mut ns: Selection) {
         if let Some(s) = self.find_hit_take(ns.head) {
             ns.head = s.head;
             // Here is a recursive call to verify that the new selection
@@ -66,7 +66,7 @@ impl SelectionStorage {
         }
     }
 
-    pub fn move_left<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_left<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
         n: usize,
         extend: bool,
@@ -77,7 +77,7 @@ impl SelectionStorage {
         });
     }
 
-    pub fn move_right<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
         n: usize,
         extend: bool,
@@ -88,7 +88,7 @@ impl SelectionStorage {
         });
     }
 
-    pub fn move_up<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_up<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
         n: usize,
         extend: bool,
@@ -99,7 +99,7 @@ impl SelectionStorage {
         });
     }
 
-    pub fn move_down<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_down<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
         n: usize,
         extend: bool,

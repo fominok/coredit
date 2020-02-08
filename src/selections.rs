@@ -15,7 +15,7 @@ pub struct Position {
 }
 
 impl Position {
-    fn new(line: PositiveUsize, col: PositiveUsize) -> Self {
+    pub(crate) fn new(line: PositiveUsize, col: PositiveUsize) -> Self {
         Position { line, col }
     }
 }
@@ -67,6 +67,7 @@ impl Selection {
     }
 
     /// A shortcut to create Position instances in place.
+    #[cfg(test)]
     pub(crate) fn new_quick(
         head_line: usize,
         head_col: usize,

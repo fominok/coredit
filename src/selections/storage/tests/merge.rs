@@ -1,7 +1,6 @@
 use super::*;
 use crate::selections::storage::*;
 use crate::selections::CursorDirection;
-use std::collections::HashMap;
 
 #[test]
 fn test_selection_intersect_partial_eq_forward() {
