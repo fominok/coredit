@@ -15,6 +15,14 @@ pub struct Buffer {
     selection_storage: SelectionStorage,
 }
 
+#[cfg(test)]
+impl PartialEq for Buffer {
+    fn eq(&self, rhs: &Self) -> bool {
+        (*self.rope.borrow() == *rhs.rope.borrow())
+            && (self.selection_storage == rhs.selection_storage)
+    }
+}
+
 impl Buffer {
     pub fn empty() -> Self {
         let rope = Rc::new(RefCell::new(Rope::from_str("")));
@@ -55,21 +63,25 @@ impl Buffer {
 }
 
 impl LineLengh for Rope {
-    fn length(&self, _line: usize) -> Option<usize> {
-        todo!()
+    fn length(&self, line: usize) -> Option<usize> {
+        if line < self.count() {
+            Some(self.line(line - 1).len_chars())
+        } else {
+            None
+        }
     }
 
     fn count(&self) -> usize {
-        todo!()
+        self.len_lines()
     }
 }
 
 impl<L: LineLengh> LineLengh for RefCell<L> {
-    fn length(&self, _line: usize) -> Option<usize> {
-        todo!()
+    fn length(&self, line: usize) -> Option<usize> {
+        self.borrow().length(line)
     }
 
     fn count(&self) -> usize {
-        todo!()
+        self.borrow().count()
     }
 }

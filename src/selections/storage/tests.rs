@@ -31,26 +31,3 @@ fn gen_storage() -> SelectionStorage {
 
     storage
 }
-
-type SelectionQuick = (usize, usize, usize, usize, bool);
-
-fn gen_storage_from_tuples(selections: &[SelectionQuick]) -> SelectionStorage {
-    let mut storage = SelectionStorage::new();
-    let mut tree = BTreeSet::new();
-    for s in selections {
-        tree.insert(SelectionIntersect(Selection::new_quick(
-            s.0,
-            s.1,
-            s.2,
-            s.3,
-            if s.4 {
-                CursorDirection::Forward
-            } else {
-                CursorDirection::Backward
-            },
-        )));
-    }
-    storage.selections_tree = tree;
-
-    storage
-}

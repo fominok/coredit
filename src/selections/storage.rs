@@ -15,6 +15,20 @@ pub(crate) struct SelectionStorage {
     selections_tree: BTreeSet<SelectionIntersect>,
 }
 
+#[cfg(test)]
+impl PartialEq for SelectionStorage {
+    fn eq(&self, rhs: &Self) -> bool {
+        let self_vec: Vec<Selection> = self.selections_tree.iter().map(|x| x.0.clone()).collect();
+
+        let rhs_vec: Vec<Selection> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
+
+        self_vec == rhs_vec
+    }
+}
+
+#[cfg(test)]
+type SelectionQuick = (usize, usize, usize, usize, bool);
+
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub(crate) fn new() -> Self {
@@ -108,6 +122,30 @@ impl SelectionStorage {
         self.move_selections_char(move |s| {
             s.move_down(n, extend, line_length.deref());
         });
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gen_from_tuples(selections: &[SelectionQuick]) -> Self {
+        use super::CursorDirection;
+
+        let mut storage = SelectionStorage::new();
+        let mut tree = BTreeSet::new();
+        for s in selections {
+            tree.insert(SelectionIntersect(Selection::new_quick(
+                s.0,
+                s.1,
+                s.2,
+                s.3,
+                if s.4 {
+                    CursorDirection::Forward
+                } else {
+                    CursorDirection::Backward
+                },
+            )));
+        }
+        storage.selections_tree = tree;
+
+        storage
     }
 }
 

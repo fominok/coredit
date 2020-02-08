@@ -2,10 +2,14 @@
 use derive_more::{Add, AddAssign, Display, Into};
 use std::ops::Sub;
 
-#[derive(
-    Add, Display, Into, Clone, Copy, Debug, PartialEq, Default, Eq, Ord, PartialOrd, AddAssign,
-)]
+#[derive(Add, Display, Into, Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, AddAssign)]
 pub struct PositiveUsize(usize);
+
+impl Default for PositiveUsize {
+    fn default() -> Self {
+        PositiveUsize(1)
+    }
+}
 
 impl Sub for PositiveUsize {
     type Output = Self;
