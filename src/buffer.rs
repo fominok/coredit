@@ -64,7 +64,7 @@ impl Buffer {
 
 impl LineLengh for Rope {
     fn length(&self, line: usize) -> Option<usize> {
-        if line < self.count() {
+        if line > 0 && line < self.count() {
             Some(self.line(line - 1).len_chars())
         } else {
             None
