@@ -19,9 +19,7 @@ pub(crate) struct SelectionStorage {
 impl PartialEq for SelectionStorage {
     fn eq(&self, rhs: &Self) -> bool {
         let self_vec: Vec<Selection> = self.selections_tree.iter().map(|x| x.0.clone()).collect();
-
         let rhs_vec: Vec<Selection> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
-
         self_vec == rhs_vec
     }
 }
@@ -40,17 +38,15 @@ impl SelectionStorage {
             selections_tree: tree,
         }
     }
-    pub(crate) fn add_selection(&mut self, mut ns: Selection) {
-        if let Some(s) = self.find_hit_take(ns.head) {
-            ns.head = s.head;
+    pub(crate) fn add_selection(&mut self, ns: Selection) {
+        if let Some(mut s) = self.find_hit_take(ns.head) {
+            s.tail = ns.tail;
             // Here is a recursive call to verify that the new selection
             // has no overlaps
-            ns.drop_sticky();
-            self.add_selection(ns);
-        } else if let Some(s) = self.find_hit_take(ns.tail) {
-            ns.tail = s.tail;
-            ns.drop_sticky();
-            self.add_selection(ns);
+            self.add_selection(s);
+        } else if let Some(mut s) = self.find_hit_take(ns.tail) {
+            s.head = ns.head;
+            self.add_selection(s);
         } else {
             self.selections_tree.insert(ns.into());
         }

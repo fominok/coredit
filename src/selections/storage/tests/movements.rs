@@ -233,6 +233,7 @@ fn test_move_up_intersection() {
 
 #[test]
 fn test_move_up_intersection_sticky() {
+    // On merge sticky is preserved only for the first selection (by order)
     let mut line_length = HashMap::new();
     line_length.insert(1, 8);
     line_length.insert(2, 4);
