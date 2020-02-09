@@ -172,7 +172,7 @@ impl Selection {
     ) {
         let cursor = self.get_cursor_mut();
         loop {
-            if n > cursor.col.into() {
+            if n >= cursor.col.into() {
                 if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line) - 1)
                 {
                     n -= Into::<usize>::into(cursor.col);

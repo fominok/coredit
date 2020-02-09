@@ -1,3 +1,4 @@
+mod multi_selection_movement;
 mod single_selection_movement;
 use super::Buffer;
 use crate::selections::storage::SelectionStorage;

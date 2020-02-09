@@ -28,6 +28,20 @@ fn test_move_left_multiple_lines() {
 }
 
 #[test]
+fn test_move_left_one_line_and_one_char_more() {
+    let mut line_length = HashMap::new();
+    line_length.insert(1, 60);
+    line_length.insert(2, 1);
+    line_length.insert(3, 30);
+    let mut selection = Selection::new_quick(3, 5, 3, 5, CursorDirection::Forward);
+    selection.move_left(5, false, &line_length);
+    assert_eq!(
+        selection,
+        Selection::new_quick(2, 1, 2, 1, CursorDirection::Forward),
+    );
+}
+
+#[test]
 fn test_move_left_multiple_lines_until_beginning() {
     let mut line_length = HashMap::new();
     line_length.insert(6, 322);
