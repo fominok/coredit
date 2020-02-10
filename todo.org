@@ -1,14 +1,30 @@
-* Implement
-** Movements
-*** Selections
+* TODO Implement
+** TODO Movements
+*** DONE Selections
 Up/Down movements
 Exend or not
-*** Selection storage
+*** DONE Selection storage
 Unify over 4 directions and provide LineLength
-*** Words
-This one is tough and requires actually link with underlying rope
-and provide a layer to compute chars to move. Also it may require a
+*** TODO Words
+This one is tough and requires +to link with underlying rope
+and+ to provide a layer to compute chars to move. Also it may require a
 config layer to setup what the word actually is
-*** Paragraphs
+*** TODO Paragraphs
 Mostly the same, but should it provide different interface for many types
 of text objects; is number of text object classes limited?
+** TODO Insertions
+*** TODO Single selection
+**** TODO Insertion
+***** TODO Keyboard
+***** TODO Clipboard
+**** TODO Deletion
+*** TODO Multiple selection
+**** TODO Insertion
+***** TODO Keyboard
+There might be some optimizations depending of whether
+all cursors are on different lines
+***** TODO Clipboard
+This one is tricky as multiple yanked entries should be inserted
+in multiple places
+**** TODO Deletion
+Yanking of multiple selections should store all of the entries

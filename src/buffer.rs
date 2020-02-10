@@ -60,6 +60,16 @@ impl Buffer {
         self.selection_storage
             .move_right(n, extend, self.rope.clone());
     }
+
+    #[cfg(test)]
+    fn insert_for_test(&mut self, line: usize, col: usize, text: &str) {
+        let ch = self.rope.borrow().line_to_char(line - 1) + col;
+        self.rope.borrow_mut().insert(ch, text);
+    }
+
+    fn insert(&mut self, text: &str) {
+        todo!();
+    }
 }
 
 impl LineLengh for Rope {
