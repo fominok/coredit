@@ -68,7 +68,19 @@ impl Buffer {
     }
 
     fn insert(&mut self, text: &str) {
-        todo!();
+        let l = text.len();
+        let mut rope = self.rope.borrow_mut();
+
+        // Perform insertion reversed to prevent selections invalidation
+        // on previous iteration if it were moved forward
+        for s in self.selection_storage.iter().rev() {
+            let cursor = s.get_cursor();
+            let ch: usize = rope.line_to_char(Into::<usize>::into(cursor.line) - 1)
+                + Into::<usize>::into(cursor.col);
+            rope.insert(ch, text);
+        }
+
+        self.selection_storage.move_right_incremental(l);
     }
 }
 

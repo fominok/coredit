@@ -10,8 +10,8 @@ mod tests;
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
-    line: PositiveUsize,
-    col: PositiveUsize,
+    pub(crate) line: PositiveUsize,
+    pub(crate) col: PositiveUsize,
 }
 
 impl Position {

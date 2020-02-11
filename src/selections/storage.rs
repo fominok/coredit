@@ -12,6 +12,11 @@ use std::ops::Deref;
 /// to take special care of it
 #[derive(Debug)]
 pub(crate) struct SelectionStorage {
+    // TODO: while the Tree is ok to store selections,
+    // Rust std implementation's API is restrictive;
+    // for instance, while doing insert it may be enough
+    // to increment cursor positions which will not require
+    // any rebuilds of the tree
     selections_tree: BTreeSet<SelectionIntersect>,
 }
 
@@ -38,6 +43,11 @@ impl SelectionStorage {
             selections_tree: tree,
         }
     }
+
+    pub(crate) fn count(&self) -> usize {
+        self.selections_tree.len()
+    }
+
     pub(crate) fn add_selection(&mut self, ns: Selection) {
         if let Some(mut s) = self.find_hit_take(ns.head) {
             s.tail = ns.tail;
@@ -142,6 +152,20 @@ impl SelectionStorage {
         storage.selections_tree = tree;
 
         storage
+    }
+
+    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = Selection> + '_ {
+        self.selections_tree.iter().map(|x| x.0.clone())
+    }
+
+    pub(crate) fn move_right_incremental(&mut self, n: usize) {
+        //let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        //for s in selections_old {
+        //    let mut selection = s.0;
+        //    f(&mut selection);
+        //    self.add_selection(selection);
+        //}
+        todo!();
     }
 }
 
