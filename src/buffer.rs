@@ -68,6 +68,8 @@ impl Buffer {
     }
 
     pub fn insert(&mut self, text: &str) {
+        // TODO: fix to grapheme clusters
+        let mut insertion_info: Vec<InsertionInfo> = vec![];
         let l = text.len();
         let mut rope = self.rope.borrow_mut();
 
@@ -82,6 +84,11 @@ impl Buffer {
 
         self.selection_storage.move_right_incremental(l);
     }
+}
+
+enum InsertionInfo {
+    Characters(usize),
+    Newlines(usize),
 }
 
 #[cfg(target_family = "windows")]
