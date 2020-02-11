@@ -1,8 +1,9 @@
-use super::{Position, Selection};
+use super::{CursorDirection, Position, Selection};
 use crate::LineLengh;
 #[cfg(test)]
 mod tests;
 
+use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::ops::Deref;
@@ -159,13 +160,23 @@ impl SelectionStorage {
     }
 
     pub(crate) fn move_right_incremental(&mut self, n: usize) {
-        //let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-        //for s in selections_old {
-        //    let mut selection = s.0;
-        //    f(&mut selection);
-        //    self.add_selection(selection);
-        //}
-        todo!();
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+
+        let line_grouped = selections_old
+            .into_iter()
+            .map(|x| x.0)
+            .group_by(|x| x.head.line);
+        for (_, group) in &line_grouped {
+            let mut offset = n;
+            for mut s in group {
+                if (s.cursor_direction == CursorDirection::Backward) || s.is_point() {
+                    s.head.col += offset.into();
+                }
+                s.tail.col += offset.into();
+                offset += n;
+                self.add_selection(s);
+            }
+        }
     }
 }
 

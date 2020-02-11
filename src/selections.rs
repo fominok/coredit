@@ -66,6 +66,10 @@ impl Selection {
         }
     }
 
+    pub(crate) fn is_point(&self) -> bool {
+        self.head == self.tail
+    }
+
     /// A shortcut to create Position instances in place.
     #[cfg(test)]
     pub(crate) fn new_quick(
