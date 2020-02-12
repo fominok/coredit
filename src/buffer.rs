@@ -1,5 +1,6 @@
 use crate::selections::storage::SelectionStorage;
 use crate::{CreateFromReader, LineLengh, Result};
+use itertools::Itertools;
 use ropey::Rope;
 use snafu::ResultExt;
 use std::cell::RefCell;
@@ -63,14 +64,13 @@ impl Buffer {
 
     #[cfg(test)]
     fn insert_for_test(&mut self, line: usize, col: usize, text: &str) {
-        let ch = self.rope.borrow().line_to_char(line - 1) + col;
+        let ch = self.rope.borrow().line_to_char(line - 1) + col - 1;
         self.rope.borrow_mut().insert(ch, text);
     }
 
     pub fn insert(&mut self, text: &str) {
         // TODO: fix to grapheme clusters
-        let mut insertion_info: Vec<InsertionInfo> = vec![];
-        let l = text.len();
+        let insertion_info = text.chars().group_by(|&x| x == '\n');
         let mut rope = self.rope.borrow_mut();
 
         // Perform insertion reversed to prevent selections invalidation
@@ -78,17 +78,20 @@ impl Buffer {
         for s in self.selection_storage.iter().rev() {
             let cursor = s.get_cursor();
             let ch: usize = rope.line_to_char(Into::<usize>::into(cursor.line) - 1)
-                + Into::<usize>::into(cursor.col);
+                + Into::<usize>::into(cursor.col)
+                - 1;
             rope.insert(ch, text);
         }
 
-        self.selection_storage.move_right_incremental(l);
+        for (is_nl, group) in &insertion_info {
+            let l = group.count();
+            if is_nl {
+                self.selection_storage.move_down_incremental(l);
+            } else {
+                self.selection_storage.move_right_incremental(l);
+            }
+        }
     }
-}
-
-enum InsertionInfo {
-    Characters(usize),
-    Newlines(usize),
 }
 
 #[cfg(target_family = "windows")]
