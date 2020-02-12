@@ -1,3 +1,4 @@
+mod multi_selection_edit;
 mod multi_selection_movement;
 mod single_selection_edit;
 mod single_selection_movement;

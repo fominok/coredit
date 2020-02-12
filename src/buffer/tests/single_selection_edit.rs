@@ -2,7 +2,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 
 #[test]
-fn insert_some_characters() {
+fn test_insert_some_characters() {
     let mut buffer = load_buffer();
     buffer.move_right(30, false);
     buffer.insert(" awesome crate named");
@@ -12,7 +12,7 @@ fn insert_some_characters() {
 }
 
 #[test]
-fn insert_some_characters_before_selection() {
+fn test_insert_some_characters_before_selection() {
     let mut buffer = load_buffer();
     buffer.move_right(40, false);
     buffer.move_left(10, true);
@@ -23,7 +23,7 @@ fn insert_some_characters_before_selection() {
 }
 
 #[test]
-fn insert_some_characters_after_selection() {
+fn test_insert_some_characters_after_selection() {
     let mut buffer = load_buffer();
     buffer.move_right(20, false);
     buffer.move_right(10, true);
@@ -34,7 +34,7 @@ fn insert_some_characters_after_selection() {
 }
 
 #[test]
-fn insert_some_characters_with_newline() {
+fn test_insert_some_characters_with_newline() {
     let mut buffer = load_buffer();
     buffer.move_right(30, false);
     buffer.insert(" awesome\ncrate named");
@@ -43,7 +43,7 @@ fn insert_some_characters_with_newline() {
     assert_eq!(buffer, reference_buffer);
 }
 
-fn insert_some_characters_before_selection_with_newline() {
+fn test_insert_some_characters_before_selection_with_newline() {
     let mut buffer = load_buffer();
     buffer.move_right(40, false);
     buffer.move_left(10, true);
@@ -54,7 +54,7 @@ fn insert_some_characters_before_selection_with_newline() {
 }
 
 #[test]
-fn insert_some_characters_after_selection_with_newline() {
+fn test_insert_some_characters_after_selection_with_newline() {
     let mut buffer = load_buffer();
     buffer.move_right(20, false);
     buffer.move_right(10, true);

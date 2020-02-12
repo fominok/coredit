@@ -69,10 +69,7 @@ impl Buffer {
     }
 
     pub fn insert(&mut self, text: &str) {
-        // TODO: fix to grapheme clusters
-        let insertion_info = text.chars().group_by(|&x| x == '\n');
         let mut rope = self.rope.borrow_mut();
-
         // Perform insertion reversed to prevent selections invalidation
         // on previous iteration if it were moved forward
         for s in self.selection_storage.iter().rev() {
@@ -83,6 +80,8 @@ impl Buffer {
             rope.insert(ch, text);
         }
 
+        // TODO: fix to grapheme clusters
+        let insertion_info = text.chars().group_by(|&x| x == '\n');
         for (is_nl, group) in &insertion_info {
             let l = group.count();
             if is_nl {

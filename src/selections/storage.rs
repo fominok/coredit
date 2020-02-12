@@ -182,14 +182,26 @@ impl SelectionStorage {
     pub(crate) fn move_down_incremental(&mut self, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
+        // FIXME: on insert after selection the selection must stay on a line
+        // but on previous iteration it should be moved when the tail is
+        // moved on previous and current iterations
+        let mut offset = n;
         for mut s in selections_old.into_iter().map(|x| x.0) {
-            let mut offset = n;
-            if (s.cursor_direction == CursorDirection::Backward) || s.is_point() {
+            if s.is_point() {
                 s.head.line += offset.into();
                 s.head.col = 1.into();
+                s.tail.line += offset.into();
+                s.tail.col = 1.into();
+            } else if (s.cursor_direction == CursorDirection::Backward) {
+                let col_diff = s.tail.col - s.head.col + 1.into();
+                s.head.line += offset.into();
+                s.head.col = 1.into();
+                s.tail.line += offset.into();
+                s.tail.col = col_diff;
+            } else {
+                s.tail.line += offset.into();
+                s.tail.col = 1.into();
             }
-            s.tail.line += offset.into();
-            s.tail.col = 1.into();
             offset += n;
             self.add_selection(s);
         }
