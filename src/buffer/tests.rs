@@ -1,7 +1,9 @@
 mod multi_selection_insert;
 mod multi_selection_movement;
+mod single_selection_delete;
 mod single_selection_insert;
 mod single_selection_movement;
+
 use super::Buffer;
 use crate::selections::storage::SelectionStorage;
 use std::fs::File;
