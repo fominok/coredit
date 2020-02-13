@@ -37,11 +37,15 @@ impl PositiveUsize {
     }
 
     pub fn sub_assign(&mut self, value: usize) {
-        *self = *self - PositiveUsize(value as usize)
+        if value > 0 {
+            *self = *self - PositiveUsize(value as usize)
+        }
     }
 
     pub fn add_assign(&mut self, value: usize) {
-        *self = *self + PositiveUsize(value as usize)
+        if value > 0 {
+            *self = *self + PositiveUsize(value as usize)
+        }
     }
 }
 
