@@ -133,8 +133,6 @@ impl SelectionStorage {
 
     #[cfg(test)]
     pub(crate) fn gen_from_tuples(selections: &[SelectionQuick]) -> Self {
-        use super::CursorDirection;
-
         let mut storage = SelectionStorage::new();
         let mut tree = BTreeSet::new();
         for s in selections {

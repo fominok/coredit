@@ -93,16 +93,14 @@ impl Buffer {
     }
 }
 
-#[cfg(target_family = "windows")]
-const LINE_END_GT_1: usize = 1;
-
-#[cfg(target_family = "unix")]
-const LINE_END_GT_1: usize = 0;
-
 impl LineLengh for Rope {
     fn length(&self, line: usize) -> Option<usize> {
-        if line > 0 && line < self.count() {
-            Some(self.line(line - 1).len_chars() - LINE_END_GT_1)
+        // `line` arg is starting from 1
+
+        // FIXME: \n and \r do not cover all newline things afaik
+        if line > 0 && line <= self.count() {
+            let s = self.line(line - 1).to_string();
+            Some(s.trim_end_matches(|x| x == '\n' || x == '\r').len() + 1)
         } else {
             None
         }

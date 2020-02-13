@@ -2,7 +2,7 @@ use super::*;
 use pretty_assertions::assert_eq;
 
 #[test]
-fn test_insert_some_characters() {
+fn test_insert() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 3, true),
         (3, 11, 3, 11, true),
@@ -21,7 +21,7 @@ fn test_insert_some_characters() {
 }
 
 #[test]
-fn test_insert_some_characters_before_selection() {
+fn test_insert_before_selection() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 13, false),
         (3, 11, 3, 21, false),
@@ -40,7 +40,7 @@ fn test_insert_some_characters_before_selection() {
 }
 
 #[test]
-fn test_insert_some_characters_after_selection() {
+fn test_insert_after_selection() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 13, true),
         (3, 11, 3, 21, true),
@@ -59,7 +59,7 @@ fn test_insert_some_characters_after_selection() {
 }
 
 #[test]
-fn test_insert_some_characters_with_newline() {
+fn test_insert_with_newline() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 3, true),
         (3, 11, 3, 11, true),
@@ -78,7 +78,7 @@ fn test_insert_some_characters_with_newline() {
 }
 
 #[test]
-fn test_insert_some_characters_before_selection_with_newline() {
+fn test_insert_before_selection_with_newline() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 13, false),
         (3, 11, 3, 21, false),
@@ -97,7 +97,7 @@ fn test_insert_some_characters_before_selection_with_newline() {
 }
 
 #[test]
-fn test_insert_some_characters_after_selection_with_newline() {
+fn test_insert_after_selection_with_newline() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 13, true),
         (3, 11, 3, 21, true),
@@ -117,3 +117,6 @@ fn test_insert_some_characters_after_selection_with_newline() {
 // TODO: check multiple newlines in a row
 //       check selection over multiple lines insert before/after
 //       check possible overlaps (if do iteratively)
+
+#[test]
+fn test_insert_before_selection_with_multiple_newlines_overlap() {}

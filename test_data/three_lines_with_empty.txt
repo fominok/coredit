@@ -2,3 +2,7 @@ This will be used to check how ropey represents empty lines
 
 Like that one above;
 This one is not empty though, but last and I didnt' end it explicitly with newline
+Well not it is not last.
+Here are some more lines as tests became more complex and I need bigger selections.
+While it will be easier to just use lipsum I write these lines manually
+    Ok here is the last one I am tired of it for now

@@ -24,7 +24,7 @@ fn move_right_file_overflow() {
     // Actually the second line will be overflowed too
     let mut buffer = load_buffer();
     buffer.move_right(1337, false);
-    let reference_buffer = load_buffer_with_selections(&vec![(4, 83, 4, 83, true)]);
+    let reference_buffer = load_buffer_with_selections(&vec![(8, 53, 8, 53, true)]);
     assert_eq!(buffer, reference_buffer);
 }
 
@@ -56,6 +56,6 @@ fn move_down_sticky_and_overflow() {
     buffer.move_down(2, false);
     buffer.move_left(1, false);
     buffer.move_down(420, false);
-    let reference_buffer = load_buffer_with_selections(&vec![(4, 20, 4, 20, true)]);
+    let reference_buffer = load_buffer_with_selections(&vec![(8, 20, 8, 20, true)]);
     assert_eq!(buffer, reference_buffer);
 }
