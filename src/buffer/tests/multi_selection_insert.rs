@@ -114,9 +114,6 @@ fn test_insert_after_selection_with_newline() {
     reference_buffer.insert_for_test(6, 43, " (top\nkek) ");
     assert_eq!(buffer, reference_buffer);
 }
-// TODO: check multiple newlines in a row
-//       check selection over multiple lines insert before/after
-//       check possible overlaps (if do iteratively)
 
 #[test]
 fn test_insert_before_selection_with_multiple_newlines_overlap() {
@@ -134,5 +131,24 @@ fn test_insert_before_selection_with_multiple_newlines_overlap() {
     reference_buffer.insert_for_test(3, 10, " (top\n\nkek) ");
     reference_buffer.insert_for_test(6, 10, " (top\n\nkek) ");
     reference_buffer.insert_for_test(9, 10, " (top\n\nkek) ");
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+fn test_insert_after_selection_with_multiple_newlines_overlap() {
+    let mut buffer = load_buffer_with_selections(&vec![
+        (3, 10, 3, 20, true),
+        (4, 10, 4, 20, true),
+        (5, 10, 5, 20, true),
+    ]);
+    buffer.insert(" (top\n\nkek) ");
+    let mut reference_buffer = load_buffer_with_selections(&vec![
+        (3, 10, 5, 6, true),
+        (6, 10, 8, 6, true),
+        (9, 10, 11, 6, true),
+    ]);
+    reference_buffer.insert_for_test(3, 20, " (top\n\nkek) ");
+    reference_buffer.insert_for_test(6, 20, " (top\n\nkek) ");
+    reference_buffer.insert_for_test(9, 20, " (top\n\nkek) ");
     assert_eq!(buffer, reference_buffer);
 }
