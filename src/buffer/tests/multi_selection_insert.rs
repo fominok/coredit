@@ -123,10 +123,14 @@ fn test_insert_before_selection_with_multiple_newlines_overlap() {
     let mut buffer = load_buffer_with_selections(&vec![
         (3, 10, 3, 20, false),
         (4, 10, 4, 20, false),
-        (5, 10, 3, 20, false),
+        (5, 10, 5, 20, false),
     ]);
     buffer.insert(" (top\n\nkek) ");
-    let mut reference_buffer = load_buffer_with_selections(&vec![]);
+    let mut reference_buffer = load_buffer_with_selections(&vec![
+        (5, 6, 5, 16, false),
+        (8, 6, 8, 16, false),
+        (11, 6, 11, 16, false),
+    ]);
     reference_buffer.insert_for_test(3, 10, " (top\n\nkek) ");
     reference_buffer.insert_for_test(6, 10, " (top\n\nkek) ");
     reference_buffer.insert_for_test(9, 10, " (top\n\nkek) ");

@@ -6,10 +6,10 @@ use super::Buffer;
 use crate::selections::storage::SelectionStorage;
 use std::fs::File;
 
-const THREE_LINES_TEXT: &'static str = "test_data/three_lines_with_empty.txt";
+const TEXT: &'static str = "test_data/sample_text.txt";
 
 fn load_buffer() -> Buffer {
-    let f = File::open(THREE_LINES_TEXT).unwrap();
+    let f = File::open(TEXT).unwrap();
     Buffer::from_reader(f).unwrap()
 }
 
