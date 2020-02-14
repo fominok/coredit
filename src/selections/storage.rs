@@ -75,7 +75,7 @@ impl SelectionStorage {
             .map(|si| si.0)
     }
 
-    fn move_selections_char<F>(&mut self, mut f: F)
+    fn apply_to_selections<F>(&mut self, mut f: F)
     where
         F: FnMut(&mut Selection) -> (),
     {
@@ -93,7 +93,7 @@ impl SelectionStorage {
         extend: bool,
         line_length: D,
     ) {
-        self.move_selections_char(move |s| {
+        self.apply_to_selections(move |s| {
             s.move_left(n, extend, line_length.deref());
         });
     }
@@ -104,7 +104,7 @@ impl SelectionStorage {
         extend: bool,
         line_length: D,
     ) {
-        self.move_selections_char(move |s| {
+        self.apply_to_selections(move |s| {
             s.move_right(n, extend, line_length.deref());
         });
     }
@@ -115,7 +115,7 @@ impl SelectionStorage {
         extend: bool,
         line_length: D,
     ) {
-        self.move_selections_char(move |s| {
+        self.apply_to_selections(move |s| {
             s.move_up(n, extend, line_length.deref());
         });
     }
@@ -126,8 +126,14 @@ impl SelectionStorage {
         extend: bool,
         line_length: D,
     ) {
-        self.move_selections_char(move |s| {
+        self.apply_to_selections(move |s| {
             s.move_down(n, extend, line_length.deref());
+        });
+    }
+
+    pub(crate) fn shrink_to_head(&mut self) {
+        self.apply_to_selections(move |s| {
+            s.drop_selection_to_head();
         });
     }
 

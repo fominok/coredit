@@ -107,15 +107,18 @@ impl Buffer {
 
     pub fn delete(&mut self) {
         let mut rope = self.rope.borrow_mut();
-        for s in self.selection_storage.iter().rev() {
-            let (from, to) = s.get_bounds();
-            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
-                + Into::<usize>::into(from.col)
-                - 1;
-            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
-                + Into::<usize>::into(to.col)
-                - 1;
-            rope.remove(from_ch..=to_ch);
+        if rope.len_chars() > 0 {
+            for s in self.selection_storage.iter().rev() {
+                let (from, to) = s.get_bounds();
+                let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+                    + Into::<usize>::into(from.col)
+                    - 1;
+                let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+                    + Into::<usize>::into(to.col)
+                    - 1;
+                rope.remove(from_ch..=to_ch);
+            }
+            self.selection_storage.shrink_to_head();
         }
     }
 }

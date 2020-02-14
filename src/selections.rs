@@ -126,6 +126,12 @@ impl Selection {
         }
     }
 
+    /// Drop selection to 1-length but always to the beginning
+    fn drop_selection_to_head(&mut self) {
+        self.tail = self.head;
+        self.cursor_direction = CursorDirection::Forward;
+    }
+
     /// As movements can be complicated, setting, on the contrary,
     /// is an assignment of a cursor to an existing position
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
