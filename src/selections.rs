@@ -159,6 +159,11 @@ impl Selection {
         }
     }
 
+    /// Get positions pair references
+    pub(crate) fn get_bounds(&self) -> (&Position, &Position) {
+        (&self.head, &self.tail)
+    }
+
     /// Get cursor mutable reference for inplace operations
     pub(crate) fn get_cursor_mut(&mut self) -> &mut Position {
         match self.cursor_direction {

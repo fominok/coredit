@@ -3,11 +3,10 @@ use pretty_assertions::assert_eq;
 
 #[test]
 fn test_delete() {
-    let mut buffer = load_buffer();
-    buffer.move_right(30, false);
-    buffer.insert(" awesome crate named");
-    let mut reference_buffer = load_buffer_with_selections(&vec![(1, 51, 1, 51, true)]);
-    reference_buffer.insert_for_test(1, 31, " awesome crate named");
+    let mut buffer = load_buffer_with_selections(&vec![(3, 20, 3, 20, true)]);
+    buffer.delete();
+    let mut reference_buffer = load_buffer_with_selections(&vec![(3, 20, 3, 20, true)]);
+    reference_buffer.delete_for_test(3, 20, 3, 20);
     assert_eq!(buffer, reference_buffer);
 }
 

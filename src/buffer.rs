@@ -68,6 +68,19 @@ impl Buffer {
         self.rope.borrow_mut().insert(ch, text);
     }
 
+    #[cfg(test)]
+    fn delete_for_test(
+        &mut self,
+        from_line: usize,
+        from_col: usize,
+        to_line: usize,
+        to_col: usize,
+    ) {
+        let ch_from = self.rope.borrow().line_to_char(from_line - 1) + from_col - 1;
+        let ch_to = self.rope.borrow().line_to_char(to_line - 1) + to_col - 1;
+        self.rope.borrow_mut().remove(ch_from..=ch_to);
+    }
+
     pub fn insert(&mut self, text: &str) {
         let mut rope = self.rope.borrow_mut();
         // Perform insertion reversed to prevent selections invalidation
@@ -91,6 +104,20 @@ impl Buffer {
             }
         }
     }
+
+    pub fn delete(&mut self) {
+        let mut rope = self.rope.borrow_mut();
+        for s in self.selection_storage.iter().rev() {
+            let (from, to) = s.get_bounds();
+            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+                + Into::<usize>::into(from.col)
+                - 1;
+            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+                + Into::<usize>::into(to.col)
+                - 1;
+            rope.remove(from_ch..=to_ch);
+        }
+    }
 }
 
 impl LineLengh for Rope {
@@ -98,6 +125,7 @@ impl LineLengh for Rope {
         // `line` arg is starting from 1
 
         // FIXME: \n and \r do not cover all newline things afaik
+        // Also desired len is in grapheme clusters not String's .len()
         if line > 0 && line <= self.count() {
             let s = self.line(line - 1).to_string();
             Some(s.trim_end_matches(|x| x == '\n' || x == '\r').len() + 1)
