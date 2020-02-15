@@ -66,3 +66,15 @@ fn test_delete_everything() {
     let mut reference_buffer = Buffer::empty();
     assert_eq!(buffer, reference_buffer);
 }
+
+#[test]
+fn test_delete_everything_after() {
+    let mut buffer = load_buffer();
+    buffer.move_right(10, false);
+    for _ in 0..1337 {
+        buffer.delete();
+    }
+    let mut reference_buffer = Buffer::from_reader("This will ".as_bytes()).unwrap();
+    reference_buffer.move_right(10, false);
+    assert_eq!(buffer, reference_buffer);
+}

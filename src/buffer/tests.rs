@@ -1,3 +1,4 @@
+mod multi_selection_delete;
 mod multi_selection_insert;
 mod multi_selection_movement;
 mod single_selection_delete;
