@@ -13,3 +13,4 @@ itertools = "0.8"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
+better-panic = "0.2.0"

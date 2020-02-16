@@ -127,7 +127,7 @@ impl Selection {
     }
 
     /// Drop selection to 1-length but always to the beginning
-    fn drop_selection_to_head(&mut self) {
+    pub(crate) fn drop_selection_to_head(&mut self) {
         self.tail = self.head;
         self.cursor_direction = CursorDirection::Forward;
     }
