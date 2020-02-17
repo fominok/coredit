@@ -163,6 +163,22 @@ impl SelectionStorage {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
+    pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+
+        let (on_the_line, others): (Vec<Selection>, Vec<Selection>) = selections_old
+            .into_iter()
+            .map(|x| x.0)
+            .partition(|x| x.head.line == line.into() && x.head.col > after.into());
+        for mut s in on_the_line {
+            s.nudge_left(n);
+            self.add_selection(s);
+        }
+        for s in others {
+            self.add_selection(s);
+        }
+    }
+
     pub(crate) fn move_right_incremental(&mut self, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 

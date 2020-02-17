@@ -3,7 +3,25 @@ use better_panic;
 use pretty_assertions::assert_eq;
 
 #[test]
-fn test_deletion() {
+fn test_delete_single_line() {
+    let mut buffer = load_buffer_with_selections(&vec![
+        (1, 3, 1, 4, true),
+        (1, 7, 1, 8, true),
+        (1, 55, 1, 56, true),
+    ]);
+    buffer.delete();
+    //buffer.delete();
+    //buffer.delete();
+    let mut reference_buffer =
+        load_buffer_with_selections(&vec![(1, 3, 1, 3, true), (1, 47, 1, 47, true)]);
+    reference_buffer.delete_for_test(1, 1, 1, 59);
+    reference_buffer.insert_for_test(1, 1, "Thbe used to check how roey represents empty l");
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+#[ignore]
+fn test_deletion_multiple_lines() {
     let mut buffer = load_buffer_with_selections(&vec![
         (3, 10, 3, 20, true),
         (4, 10, 4, 20, true),
@@ -21,22 +39,7 @@ fn test_deletion() {
     assert_eq!(buffer, reference_buffer);
 }
 
-#[test]
-fn test_delete_single_line() {
-    let mut buffer = load_buffer_with_selections(&vec![
-        (1, 3, 1, 4, true),
-        (1, 7, 1, 8, true),
-        (1, 55, 1, 56, true),
-    ]);
-    buffer.delete();
-    buffer.delete();
-    buffer.delete();
-    let mut reference_buffer =
-        load_buffer_with_selections(&vec![(1, 3, 1, 3, true), (1, 47, 1, 47, true)]);
-    reference_buffer.delete_for_test(1, 1, 1, 59);
-    reference_buffer.insert_for_test(1, 1, "Thbe used to check how roey represents empty l");
-    assert_eq!(buffer, reference_buffer);
-}
+// TODO: test selection tail on another line
 
 #[test]
 #[ignore]

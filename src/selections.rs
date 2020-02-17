@@ -210,6 +210,13 @@ impl Selection {
         }
     }
 
+    pub(crate) fn nudge_left(&mut self, n: usize) {
+        self.head.col.sub_assign(n);
+        if self.tail.line == self.head.line {
+            self.tail.col.sub_assign(n);
+        }
+    }
+
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
