@@ -22,6 +22,24 @@ fn test_deletion() {
 }
 
 #[test]
+fn test_delete_single_line() {
+    let mut buffer = load_buffer_with_selections(&vec![
+        (1, 3, 1, 4, true),
+        (1, 7, 1, 8, true),
+        (1, 55, 1, 56, true),
+    ]);
+    buffer.delete();
+    buffer.delete();
+    buffer.delete();
+    let mut reference_buffer =
+        load_buffer_with_selections(&vec![(1, 3, 1, 3, true), (1, 47, 1, 47, true)]);
+    reference_buffer.delete_for_test(1, 1, 1, 59);
+    reference_buffer.insert_for_test(1, 1, "Thbe used to check how roey represents empty l");
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+#[ignore]
 fn test_deletion_merge() {
     better_panic::install();
 
