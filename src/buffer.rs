@@ -4,6 +4,7 @@ use itertools::Itertools;
 use ropey::Rope;
 use snafu::ResultExt;
 use std::cell::RefCell;
+use std::collections::BTreeSet;
 use std::io;
 use std::rc::Rc;
 
@@ -108,20 +109,22 @@ impl Buffer {
     pub fn delete(&mut self) {
         let mut rope = self.rope.borrow_mut();
         let mut offset: usize = 0;
-        for mut s in self.selection_storage.iter() {
+        let selections_old =
+            std::mem::replace(&mut self.selection_storage.selections_tree, BTreeSet::new());
+        for mut s in selections_old.into_iter().map(|si| si.0) {
+            s.nudge_left(offset);
             let (from, to) = s.get_bounds();
             let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
                 + Into::<usize>::into(from.col)
-                - offset
                 - 1;
             let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
                 + Into::<usize>::into(to.col)
-                - offset
                 - 1;
-            offset += to_ch - from_ch;
+            offset += to_ch - from_ch + 1;
             if to_ch < rope.len_chars() {
                 rope.remove(from_ch..=to_ch);
             }
+            self.selection_storage.add_selection(s);
         }
         //for (after_line, after_col, n) in changes.into_iter() {
         //    self.selection_storage.move_left_on_line(after_line, after_col, n);

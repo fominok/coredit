@@ -18,7 +18,7 @@ pub(crate) struct SelectionStorage {
     // for instance, while doing insert it may be enough
     // to increment cursor positions which will not require
     // any rebuilds of the tree
-    selections_tree: BTreeSet<SelectionIntersect>,
+    pub(crate) selections_tree: BTreeSet<SelectionIntersect>,
 }
 
 #[cfg(test)]
@@ -238,7 +238,7 @@ impl From<SelectionIntersect> for Selection {
 }
 
 #[derive(Debug)]
-struct SelectionIntersect(Selection);
+pub(crate) struct SelectionIntersect(pub(crate) Selection);
 
 impl Eq for SelectionIntersect {}
 
