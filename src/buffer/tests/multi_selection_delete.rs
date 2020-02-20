@@ -3,6 +3,7 @@ use better_panic;
 use pretty_assertions::assert_eq;
 
 #[test]
+#[ignore]
 fn test_delete_single_line() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 4, true),
@@ -22,6 +23,7 @@ fn test_delete_single_line() {
 }
 
 #[test]
+#[ignore]
 fn test_delete_single_line_merge() {
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 3, 1, 4, true),

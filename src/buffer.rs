@@ -1,10 +1,10 @@
 use crate::selections::storage::SelectionStorage;
+use crate::selections::Selection;
 use crate::{CreateFromReader, LineLengh, Result};
 use itertools::Itertools;
 use ropey::Rope;
 use snafu::ResultExt;
 use std::cell::RefCell;
-use std::collections::BTreeSet;
 use std::io;
 use std::rc::Rc;
 
@@ -108,28 +108,70 @@ impl Buffer {
 
     pub fn delete(&mut self) {
         let mut rope = self.rope.borrow_mut();
-        let mut offset: usize = 0;
-        let events: Vec<_> = self
-            .selection_storage
-            .iter()
-            .map(|s| {
-                let (from, to) = s.get_bounds();
-                let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
-                    + Into::<usize>::into(from.col)
-                    - 1;
-                let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
-                    + Into::<usize>::into(to.col)
-                    - 1;
-                DeleteEvent {
-                    characters: to_ch - from_ch + 1,
-                    newlines: 0,
-                    from: from_ch,
-                    to: to_ch,
-                }
-            })
-            .collect();
 
-        for e in events.iter() {}
+        // Plan:
+        // 0. Peek next selection
+        // 1. Compute delta
+        // 2. Actually delete
+        // 3. Shrink to head
+        // 4. Apply delta to subsequent selections
+        // 5. Rinse and repeat
+
+        let mut current_selection = self.selection_storage.iter().next();
+
+        while let Some(mut s) = current_selection.take() {
+            let (from, to) = s.get_bounds();
+            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+                + Into::<usize>::into(from.col)
+                - 1;
+            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+                + Into::<usize>::into(to.col)
+                - 1;
+            if to_ch < rope.len_chars() {
+                rope.remove(from_ch..=to_ch);
+            }
+            s.drop_selection_to_head();
+            self.selection_storage.replace_selection(s.clone());
+            self.selection_storage
+                .apply_delete_delta(&s, to_ch - from_ch + 1, 0);
+            current_selection = self.selection_storage.get_first_after(&s);
+        }
+
+        // let events: Vec<_> = self
+        //     .selection_storage
+        //     .iter()
+        //     .map(|s| {
+        //         let (from, to) = s.get_bounds();
+        //         let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+        //             + Into::<usize>::into(from.col)
+        //             - 1;
+        //         let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+        //             + Into::<usize>::into(to.col)
+        //             - 1;
+        //         DeleteEvent {
+        //             characters: to_ch - from_ch + 1,
+        //             newlines: 0,
+        //             selection: s,
+        //         }
+        //     })
+        //     .collect();
+
+        // let mut offset = 0;
+        // for e in events.iter() {
+        //     let (from, to) = e.selection.get_bounds();
+        //     let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+        //             + Into::<usize>::into(from.col)
+        //             - 1;
+        //         let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+        //             + Into::<usize>::into(to.col)
+        //             - 1;
+        //     offset += e.characters;
+
+        //     if to_ch < rope.len_chars() {
+        //         rope.remove(from_ch..=to_ch);
+        //         //self.selection_storage.move_left_on_line();
+        //     }
+        // }
         //let selections_old =
         //    std::mem::replace(&mut self.selection_storage.selections_tree, BTreeSet::new());
         //for mut s in selections_old.into_iter().map(|si| si.0) {
@@ -157,8 +199,7 @@ impl Buffer {
 struct DeleteEvent {
     characters: usize,
     newlines: usize,
-    from: usize,
-    to: usize,
+    selection: Selection,
 }
 
 impl LineLengh for Rope {

@@ -179,6 +179,27 @@ impl SelectionStorage {
         }
     }
 
+    pub(crate) fn get_first_after(&self, after: &Selection) -> Option<Selection> {
+        self.iter().find(|s| s.head > after.head)
+    }
+
+    pub(crate) fn apply_delete_delta(&mut self, after: &Selection, chars: usize, lines: usize) {
+        // Selections on the same line will be moved left on delta;
+        // if delta includes deleted newlines, then the line after deleted newlines
+        // will be appended to current and its selections will be moved left on chars delta
+        // and all subsequent selection will be moved up
+        //
+        if lines > 0 {
+            todo!("Not yet implemented with newlines");
+        }
+    }
+
+    pub(crate) fn replace_selection(&mut self, to: Selection) {
+        // TODO: perhaps we need some check here to verify that a replaced
+        // selection won't overlap the next one
+        self.selections_tree.replace(SelectionIntersect(to));
+    }
+
     pub(crate) fn move_right_incremental(&mut self, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
