@@ -109,28 +109,56 @@ impl Buffer {
     pub fn delete(&mut self) {
         let mut rope = self.rope.borrow_mut();
         let mut offset: usize = 0;
-        let selections_old =
-            std::mem::replace(&mut self.selection_storage.selections_tree, BTreeSet::new());
-        for mut s in selections_old.into_iter().map(|si| si.0) {
-            s.nudge_left(offset);
-            let (from, to) = s.get_bounds();
-            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
-                + Into::<usize>::into(from.col)
-                - 1;
-            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
-                + Into::<usize>::into(to.col)
-                - 1;
-            offset += to_ch - from_ch + 1;
-            if to_ch < rope.len_chars() {
-                rope.remove(from_ch..=to_ch);
-            }
-            self.selection_storage.add_selection(s);
-        }
-        //for (after_line, after_col, n) in changes.into_iter() {
-        //    self.selection_storage.move_left_on_line(after_line, after_col, n);
+        let events: Vec<_> = self
+            .selection_storage
+            .iter()
+            .map(|s| {
+                let (from, to) = s.get_bounds();
+                let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+                    + Into::<usize>::into(from.col)
+                    - 1;
+                let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+                    + Into::<usize>::into(to.col)
+                    - 1;
+                DeleteEvent {
+                    characters: to_ch - from_ch + 1,
+                    newlines: 0,
+                    from: from_ch,
+                    to: to_ch,
+                }
+            })
+            .collect();
+
+        for e in events.iter() {}
+        //let selections_old =
+        //    std::mem::replace(&mut self.selection_storage.selections_tree, BTreeSet::new());
+        //for mut s in selections_old.into_iter().map(|si| si.0) {
+        //    s.nudge_left(offset);
+        //    let (from, to) = s.get_bounds();
+        //    let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
+        //        + Into::<usize>::into(from.col)
+        //        - 1;
+        //    let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
+        //        + Into::<usize>::into(to.col)
+        //        - 1;
+        //    offset += to_ch - from_ch + 1;
+        //    if to_ch < rope.len_chars() {
+        //        rope.remove(from_ch..=to_ch);
+        //    }
+        //    self.selection_storage.add_selection(s);
         //}
-        self.selection_storage.shrink_to_head();
+        ////for (after_line, after_col, n) in changes.into_iter() {
+        ////    self.selection_storage.move_left_on_line(after_line, after_col, n);
+        ////}
+        //self.selection_storage.shrink_to_head();
     }
+}
+
+struct DeleteEvent {
+    characters: usize,
+    newlines: usize,
+    from: usize,
+    to: usize,
 }
 
 impl LineLengh for Rope {

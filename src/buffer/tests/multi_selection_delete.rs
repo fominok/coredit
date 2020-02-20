@@ -39,6 +39,7 @@ fn test_delete_single_line_merge() {
 }
 
 #[test]
+#[ignore]
 fn test_deletion_multiple_lines() {
     let mut buffer = load_buffer_with_selections(&vec![
         (3, 10, 3, 20, true),
