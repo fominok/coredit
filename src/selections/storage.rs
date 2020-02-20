@@ -179,8 +179,8 @@ impl SelectionStorage {
         }
     }
 
-    pub(crate) fn get_first_after(&self, after: &Selection) -> Option<Selection> {
-        self.iter().find(|s| s.head > after.head)
+    pub(crate) fn get_first_before(&self, after: &Selection) -> Option<Selection> {
+        self.iter().rev().find(|s| s.head < after.head)
     }
 
     pub(crate) fn apply_delete_delta(&mut self, after: &Selection, chars: usize, lines: usize) {
@@ -192,6 +192,7 @@ impl SelectionStorage {
         if lines > 0 {
             todo!("Not yet implemented with newlines");
         }
+        self.move_left_on_line(after.tail.line.into(), after.tail.col.into(), chars);
     }
 
     pub(crate) fn replace_selection(&mut self, to: Selection) {
