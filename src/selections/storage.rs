@@ -241,6 +241,8 @@ impl SelectionStorage {
         self.replace_selection(after);
         self.move_left_on_line(tail.line.into(), tail.col.into(), chars);
         if lines > 0 {
+            let tail_line: usize = tail.line.into();
+            let tail_line_length = line_length.length(tail_line).unwrap();
             //self.join_with_next(tail.line.into(), line_length);
             self.move_up_after_line(tail.line.into(), lines);
         }

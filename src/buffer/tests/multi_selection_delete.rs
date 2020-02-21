@@ -69,6 +69,17 @@ fn test_deletion_multiple_multiline_selections() {
 }
 
 #[test]
+fn test_deletion_multiple_multiline_selections_sharing_same_line() {
+    let mut buffer = load_buffer_with_selections(&vec![(1, 55, 4, 34, true), (4, 63, 6, 16, true)]);
+    buffer.delete();
+    let mut reference_buffer =
+        load_buffer_with_selections(&vec![(1, 55, 1, 55, true), (1, 83, 1, 83, true)]);
+    reference_buffer.delete_for_test(1, 55, 4, 34);
+    reference_buffer.delete_for_test(1, 83, 3, 16);
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
 #[ignore]
 fn test_deletion_merge() {
     better_panic::install();

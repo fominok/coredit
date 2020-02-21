@@ -122,6 +122,11 @@ impl Buffer {
             let to_ch: usize = rope.line_to_char(to_line - 1) + Into::<usize>::into(to.col) - 1;
 
             let ends_in_nl = rope.length(to_line).unwrap() < to.col.into();
+
+            // FIXME: this delta is wrong:
+            // chars should be head line length -  head column + tail column
+            // newlines seems correct for now
+
             let chars_delta = to_ch - from_ch + 1;
             let lines_delta = to_line - from_line + if ends_in_nl { 1 } else { 0 };
             if to_ch < rope.len_chars() {
