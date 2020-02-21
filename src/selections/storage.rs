@@ -163,6 +163,29 @@ impl SelectionStorage {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
+    pub(crate) fn join_with_next<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        line: usize,
+        line_length: D,
+    ) {
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+
+        let (on_the_next_line, others): (Vec<Selection>, Vec<Selection>) = selections_old
+            .into_iter()
+            .map(|x| x.0)
+            .partition(|x| x.head.line == (line + 1).into());
+        for mut s in on_the_next_line {
+            if let Some(length) = line_length.length(line) {
+                s.head.line.sub_assign(1);
+                s.head.col.add_assign(length);
+            }
+            self.add_selection(s);
+        }
+        for s in others {
+            self.add_selection(s);
+        }
+    }
+
     pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
@@ -179,20 +202,48 @@ impl SelectionStorage {
         }
     }
 
+    pub(crate) fn move_up_after_line(&mut self, after_line: usize, n: usize) {
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+
+        let (selections_after, others): (Vec<Selection>, Vec<Selection>) = selections_old
+            .into_iter()
+            .map(|x| x.0)
+            .partition(|x| x.head.line > after_line.into());
+
+        for mut s in selections_after {
+            s.nudge_up(n);
+            self.add_selection(s);
+        }
+
+        for s in others {
+            self.add_selection(s);
+        }
+    }
+
     pub(crate) fn get_first_before(&self, after: &Selection) -> Option<Selection> {
         self.iter().rev().find(|s| s.head < after.head)
     }
 
-    pub(crate) fn apply_delete_delta(&mut self, after: &Selection, chars: usize, lines: usize) {
+    pub(crate) fn apply_delete_delta<L: LineLengh, D: Deref<Target = L>>(
+        &mut self,
+        mut after: Selection,
+        chars: usize,
+        lines: usize,
+        line_length: D,
+    ) {
         // Selections on the same line will be moved left on delta;
         // if delta includes deleted newlines, then the line after deleted newlines
         // will be appended to current and its selections will be moved left on chars delta
         // and all subsequent selection will be moved up
         //
+        after.drop_selection_to_head();
+        let tail = after.tail;
+        self.replace_selection(after);
+        self.move_left_on_line(tail.line.into(), tail.col.into(), chars);
         if lines > 0 {
-            todo!("Not yet implemented with newlines");
+            //self.join_with_next(tail.line.into(), line_length);
+            self.move_up_after_line(tail.line.into(), lines);
         }
-        self.move_left_on_line(after.tail.line.into(), after.tail.col.into(), chars);
     }
 
     pub(crate) fn replace_selection(&mut self, to: Selection) {

@@ -217,6 +217,11 @@ impl Selection {
         }
     }
 
+    pub(crate) fn nudge_up(&mut self, n: usize) {
+        self.head.line.sub_assign(n);
+        self.tail.line.sub_assign(n);
+    }
+
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
         &mut self,

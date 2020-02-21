@@ -107,44 +107,31 @@ impl Buffer {
     }
 
     pub fn delete(&mut self) {
-        let mut rope = self.rope.borrow_mut();
-
-        for s in self.selection_storage.iter().rev() {
-            let (from, to) = s.get_bounds();
-            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
-                + Into::<usize>::into(from.col)
-                - 1;
-            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
-                + Into::<usize>::into(to.col)
-                - 1;
-            if to_ch < rope.len_chars() {
-                rope.remove(from_ch..=to_ch);
-            }
-        }
-
         let mut current_selection = self.selection_storage.iter().rev().next();
 
         while let Some(mut s) = current_selection.take() {
+            let mut rope = self.rope.borrow_mut();
             let (from, to) = s.get_bounds();
-            let from_ch: usize = rope.line_to_char(Into::<usize>::into(from.line) - 1)
-                + Into::<usize>::into(from.col)
-                - 1;
-            let to_ch: usize = rope.line_to_char(Into::<usize>::into(to.line) - 1)
-                + Into::<usize>::into(to.col)
-                - 1;
-            s.drop_selection_to_head();
-            self.selection_storage.replace_selection(s.clone());
-            self.selection_storage
-                .apply_delete_delta(&s, to_ch - from_ch + 1, 0);
+            // To check number of newlines we need a head tail difference in lines
+            // plus check if tail ends on newline
+            let from_line: usize = from.line.into();
+            let to_line: usize = to.line.into();
+
+            let from_ch: usize =
+                rope.line_to_char(from_line - 1) + Into::<usize>::into(from.col) - 1;
+            let to_ch: usize = rope.line_to_char(to_line - 1) + Into::<usize>::into(to.col) - 1;
+
+            let ends_in_nl = rope.length(to_line).unwrap() < to.col.into();
+            let chars_delta = to_ch - from_ch + 1;
+            let lines_delta = to_line - from_line + if ends_in_nl { 1 } else { 0 };
+            if to_ch < rope.len_chars() {
+                rope.remove(from_ch..=to_ch);
+            }
             current_selection = self.selection_storage.get_first_before(&s);
+            self.selection_storage
+                .apply_delete_delta(s, chars_delta, lines_delta, rope);
         }
     }
-}
-
-struct DeleteEvent {
-    characters: usize,
-    newlines: usize,
-    selection: Selection,
 }
 
 impl LineLengh for Rope {

@@ -39,7 +39,6 @@ fn test_delete_single_line_merge() {
 }
 
 #[test]
-#[ignore]
 fn test_deletion_multiple_lines() {
     let mut buffer = load_buffer_with_selections(&vec![
         (3, 10, 3, 20, true),
@@ -58,7 +57,16 @@ fn test_deletion_multiple_lines() {
     assert_eq!(buffer, reference_buffer);
 }
 
-// TODO: test selection tail on another line
+#[test]
+fn test_deletion_multiple_multiline_selections() {
+    let mut buffer = load_buffer_with_selections(&vec![(1, 1, 3, 5, true), (4, 1, 6, 5, true)]);
+    buffer.delete();
+    let mut reference_buffer =
+        load_buffer_with_selections(&vec![(1, 1, 1, 1, true), (2, 1, 2, 1, true)]);
+    reference_buffer.delete_for_test(1, 1, 3, 5);
+    reference_buffer.delete_for_test(2, 1, 4, 5);
+    assert_eq!(buffer, reference_buffer);
+}
 
 #[test]
 #[ignore]
