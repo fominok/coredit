@@ -226,25 +226,25 @@ impl SelectionStorage {
 
     pub(crate) fn apply_delete_delta<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
-        mut after: Selection,
-        chars: usize,
-        lines: usize,
+        mut to_delete: Selection,
         line_length: D,
     ) {
         // Selections on the same line will be moved left on delta;
         // if delta includes deleted newlines, then the line after deleted newlines
         // will be appended to current and its selections will be moved left on chars delta
         // and all subsequent selection will be moved up
-        //
-        after.drop_selection_to_head();
-        let tail = after.tail;
-        self.replace_selection(after);
-        self.move_left_on_line(tail.line.into(), tail.col.into(), chars);
-        if lines > 0 {
-            let tail_line: usize = tail.line.into();
-            let tail_line_length = line_length.length(tail_line).unwrap();
-            //self.join_with_next(tail.line.into(), line_length);
-            self.move_up_after_line(tail.line.into(), lines);
+
+        let (from, to) = to_delete.get_bounds();
+        to_delete.drop_selection_to_head();
+        let to_line: usize = to.line.into();
+        let to_col: usize = to.col.into();
+        let from_col: usize = from.col.into();
+        let chars_delta: usize = to_col - from_col + 1;
+
+        to_delete.drop_selection_to_head();
+        self.replace_selection(to_delete.clone());
+        if from.line == to.line {
+            self.move_left_on_line(to_line, to_col, chars_delta);
         }
     }
 

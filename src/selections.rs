@@ -166,8 +166,8 @@ impl Selection {
     }
 
     /// Get positions pair references
-    pub(crate) fn get_bounds(&self) -> (&Position, &Position) {
-        (&self.head, &self.tail)
+    pub(crate) fn get_bounds(&self) -> (Position, Position) {
+        (self.head, self.tail)
     }
 
     /// Get cursor mutable reference for inplace operations

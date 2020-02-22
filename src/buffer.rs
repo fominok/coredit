@@ -110,6 +110,25 @@ impl Buffer {
         let mut current_selection = self.selection_storage.iter().rev().next();
 
         while let Some(mut s) = current_selection.take() {
+            // Cases:
+            // 1. Selection ends on the same line as starts: selections on the same
+            //    line will be moved on chars delta
+            // 2. Selection ends on the newline character of the same line:
+            //    the next line will be concated to selection head from its beginning;
+            //    Other lines below are moved up;
+            // 3. Selection goes through multiple lines and ends somewhere on it:
+            //    tail line will be concatenated to selection head since tail pos;
+            //    Other lines below are moved up;
+            // 4. Selection goes through multiple lines and ends on newline char:
+            //    the next line after tail will be concated to selection head from
+            //    its beginning;
+            //    Other lines below are moved up;
+            //
+            // So everything below tail should be moved up by lines delta;
+            // If tail ends with newline then concat next from beginning to head
+            // If tail ends on another line but not its end then concat from that pos
+            //    to head
+
             let mut rope = self.rope.borrow_mut();
             let (from, to) = s.get_bounds();
             // To check number of newlines we need a head tail difference in lines
@@ -133,8 +152,7 @@ impl Buffer {
                 rope.remove(from_ch..=to_ch);
             }
             current_selection = self.selection_storage.get_first_before(&s);
-            self.selection_storage
-                .apply_delete_delta(s, chars_delta, lines_delta, rope);
+            self.selection_storage.apply_delete_delta(s, rope);
         }
     }
 }
