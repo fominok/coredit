@@ -45,10 +45,6 @@ impl SelectionStorage {
         }
     }
 
-    pub(crate) fn count(&self) -> usize {
-        self.selections_tree.len()
-    }
-
     pub(crate) fn add_selection(&mut self, ns: Selection) {
         if let Some(mut s) = self.find_hit_take(ns.head) {
             s.tail = ns.tail;
@@ -61,12 +57,6 @@ impl SelectionStorage {
         } else {
             self.selections_tree.insert(ns.into());
         }
-    }
-
-    fn find_hit(&self, s: Position) -> Option<&Selection> {
-        self.selections_tree
-            .get(&Selection::from(s).into())
-            .map(|si| &si.0)
     }
 
     fn find_hit_take(&mut self, s: Position) -> Option<Selection> {
@@ -131,10 +121,11 @@ impl SelectionStorage {
         });
     }
 
-    pub(crate) fn shrink_to_head(&mut self) {
-        self.apply_to_selections(move |s| {
-            s.drop_selection_to_head();
-        });
+    #[cfg(test)]
+    fn find_hit(&self, s: Position) -> Option<&Selection> {
+        self.selections_tree
+            .get(&Selection::from(s).into())
+            .map(|si| &si.0)
     }
 
     #[cfg(test)]
@@ -163,29 +154,6 @@ impl SelectionStorage {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
-    pub(crate) fn join_with_next<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        line: usize,
-        line_length: D,
-    ) {
-        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-
-        let (on_the_next_line, others): (Vec<Selection>, Vec<Selection>) = selections_old
-            .into_iter()
-            .map(|x| x.0)
-            .partition(|x| x.head.line == (line + 1).into());
-        for mut s in on_the_next_line {
-            if let Some(length) = line_length.length(line) {
-                s.head.line.sub_assign(1);
-                s.head.col.add_assign(length);
-            }
-            self.add_selection(s);
-        }
-        for s in others {
-            self.add_selection(s);
-        }
-    }
-
     pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
@@ -197,24 +165,6 @@ impl SelectionStorage {
             s.nudge_left(n);
             self.add_selection(s);
         }
-        for s in others {
-            self.add_selection(s);
-        }
-    }
-
-    pub(crate) fn move_up_after_line(&mut self, after_line: usize, n: usize) {
-        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-
-        let (selections_after, others): (Vec<Selection>, Vec<Selection>) = selections_old
-            .into_iter()
-            .map(|x| x.0)
-            .partition(|x| x.head.line > after_line.into());
-
-        for mut s in selections_after {
-            s.nudge_up(n);
-            self.add_selection(s);
-        }
-
         for s in others {
             self.add_selection(s);
         }

@@ -1,5 +1,4 @@
 use crate::selections::storage::SelectionStorage;
-use crate::selections::Selection;
 use crate::{CreateFromReader, LineLengh, Result};
 use itertools::Itertools;
 use ropey::Rope;
@@ -109,30 +108,9 @@ impl Buffer {
     pub fn delete(&mut self) {
         let mut current_selection = self.selection_storage.iter().rev().next();
 
-        while let Some(mut s) = current_selection.take() {
-            // Cases:
-            // 1. Selection ends on the same line as starts: selections on the same
-            //    line will be moved on chars delta
-            // 2. Selection ends on the newline character of the same line:
-            //    the next line will be concated to selection head from its beginning;
-            //    Other lines below are moved up;
-            // 3. Selection goes through multiple lines and ends somewhere on it:
-            //    tail line will be concatenated to selection head since tail pos;
-            //    Other lines below are moved up;
-            // 4. Selection goes through multiple lines and ends on newline char:
-            //    the next line after tail will be concated to selection head from
-            //    its beginning;
-            //    Other lines below are moved up;
-            //
-            // So everything below tail should be moved up by lines delta;
-            // If tail ends with newline then concat next from beginning to head
-            // If tail ends on another line but not its end then concat from that pos
-            //    to head
-
-            let mut rope = self.rope.borrow_mut();
+        while let Some(s) = current_selection.take() {
+            let rope = self.rope.borrow();
             let (from, to) = s.get_bounds();
-            // To check number of newlines we need a head tail difference in lines
-            // plus check if tail ends on newline
             let from_line: usize = from.line.into();
             let to_line: usize = to.line.into();
 
@@ -140,14 +118,6 @@ impl Buffer {
                 rope.line_to_char(from_line - 1) + Into::<usize>::into(from.col) - 1;
             let to_ch: usize = rope.line_to_char(to_line - 1) + Into::<usize>::into(to.col) - 1;
 
-            let ends_in_nl = rope.length(to_line).unwrap() < to.col.into();
-
-            // FIXME: this delta is wrong:
-            // chars should be head line length -  head column + tail column
-            // newlines seems correct for now
-
-            let chars_delta = to_ch - from_ch + 1;
-            let lines_delta = to_line - from_line + if ends_in_nl { 1 } else { 0 };
             current_selection = self.selection_storage.get_first_before(&s);
             self.selection_storage.apply_delete(s, rope);
             let mut rope = self.rope.borrow_mut();

@@ -1,5 +1,4 @@
 use super::*;
-use better_panic;
 use pretty_assertions::assert_eq;
 
 #[test]

@@ -1,7 +1,6 @@
 mod merge;
 mod movements;
 use super::*;
-use crate::selections::CursorDirection;
 
 fn gen_storage() -> SelectionStorage {
     let mut storage = SelectionStorage::new();

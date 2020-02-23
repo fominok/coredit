@@ -63,7 +63,7 @@ fn test_delete_everything() {
     for _ in 0..1337 {
         buffer.delete();
     }
-    let mut reference_buffer = Buffer::empty();
+    let reference_buffer = Buffer::empty();
     assert_eq!(buffer, reference_buffer);
 }
 

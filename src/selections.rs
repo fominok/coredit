@@ -14,12 +14,6 @@ pub struct Position {
     pub(crate) col: PositiveUsize,
 }
 
-impl Position {
-    pub(crate) fn new(line: PositiveUsize, col: PositiveUsize) -> Self {
-        Position { line, col }
-    }
-}
-
 /// For selection the head must be less than the tail, but
 /// cursor position can be specified with CursorDirection.
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -57,15 +51,6 @@ pub struct Selection {
 }
 
 impl Selection {
-    pub fn new(head: Position, tail: Position, cursor_direction: CursorDirection) -> Self {
-        Selection {
-            head: head,
-            tail: tail,
-            cursor_direction: cursor_direction,
-            sticky_column: None,
-        }
-    }
-
     pub(crate) fn is_point(&self) -> bool {
         self.head == self.tail
     }
@@ -93,6 +78,7 @@ impl Selection {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn with_sticky(mut self, sticky: usize) -> Self {
         self.sticky_column = Some(sticky.into());
         self
@@ -134,6 +120,7 @@ impl Selection {
 
     /// As movements can be complicated, setting, on the contrary,
     /// is an assignment of a cursor to an existing position
+    #[cfg(test)]
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
         match self.cursor_direction {
             CursorDirection::Forward => {
