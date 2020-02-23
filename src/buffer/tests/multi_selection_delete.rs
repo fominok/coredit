@@ -69,6 +69,26 @@ fn test_deletion_multiple_multiline_selections() {
 }
 
 #[test]
+fn test_deletion_multiple_selections_end_on_newline() {
+    let mut buffer = load_buffer_with_selections(&vec![
+        (3, 15, 3, 21, true),
+        (4, 15, 4, 21, true),
+        (5, 15, 5, 21, true),
+    ]);
+    buffer.delete();
+    let mut reference_buffer = load_buffer_with_selections(&vec![
+        (3, 15, 3, 15, true),
+        (3, 29, 3, 29, true),
+        (4, 15, 4, 15, true),
+    ]);
+    reference_buffer.delete_for_test(3, 15, 3, 21);
+    reference_buffer.delete_for_test(3, 29, 3, 35);
+    reference_buffer.delete_for_test(4, 15, 4, 21);
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+#[ignore]
 fn test_deletion_multiple_multiline_selections_sharing_same_line() {
     let mut buffer = load_buffer_with_selections(&vec![(1, 55, 4, 34, true), (4, 63, 6, 16, true)]);
     buffer.delete();

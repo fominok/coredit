@@ -224,7 +224,7 @@ impl SelectionStorage {
         self.iter().rev().find(|s| s.head < after.head)
     }
 
-    pub(crate) fn apply_delete_delta<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn apply_delete<L: LineLengh, D: Deref<Target = L>>(
         &mut self,
         mut to_delete: Selection,
         line_length: D,
@@ -239,12 +239,44 @@ impl SelectionStorage {
         let to_line: usize = to.line.into();
         let to_col: usize = to.col.into();
         let from_col: usize = from.col.into();
+        let from_line: usize = from.line.into();
         let chars_delta: usize = to_col - from_col + 1;
 
         to_delete.drop_selection_to_head();
         self.replace_selection(to_delete.clone());
-        if from.line == to.line {
-            self.move_left_on_line(to_line, to_col, chars_delta);
+
+        let lines_delta = to_line - from_line
+            + if to_col == line_length.length(to_line).unwrap() {
+                1
+            } else {
+                0
+            };
+
+        self.move_left_on_line(to_line, to_col, chars_delta);
+
+        if lines_delta > 0 {
+            let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+
+            let (selections_after, others): (Vec<Selection>, Vec<Selection>) = selections_old
+                .into_iter()
+                .map(|x| x.0)
+                .partition(|x| x.head > to_delete.tail);
+
+            let mut selections_after_iter = selections_after.into_iter();
+            if let Some(mut first_after) = selections_after_iter.next() {
+                first_after.nudge_up(lines_delta);
+                first_after.nudge_right(from_col - 1);
+                self.add_selection(first_after);
+            }
+
+            for mut s in selections_after_iter {
+                s.nudge_up(lines_delta);
+                self.add_selection(s);
+            }
+
+            for s in others {
+                self.add_selection(s);
+            }
         }
     }
 

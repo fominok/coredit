@@ -217,6 +217,13 @@ impl Selection {
         }
     }
 
+    pub(crate) fn nudge_right(&mut self, n: usize) {
+        self.head.col.add_assign(n);
+        if self.tail.line == self.head.line {
+            self.tail.col.add_assign(n);
+        }
+    }
+
     pub(crate) fn nudge_up(&mut self, n: usize) {
         self.head.line.sub_assign(n);
         self.tail.line.sub_assign(n);

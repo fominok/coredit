@@ -148,11 +148,12 @@ impl Buffer {
 
             let chars_delta = to_ch - from_ch + 1;
             let lines_delta = to_line - from_line + if ends_in_nl { 1 } else { 0 };
+            current_selection = self.selection_storage.get_first_before(&s);
+            self.selection_storage.apply_delete(s, rope);
+            let mut rope = self.rope.borrow_mut();
             if to_ch < rope.len_chars() {
                 rope.remove(from_ch..=to_ch);
             }
-            current_selection = self.selection_storage.get_first_before(&s);
-            self.selection_storage.apply_delete_delta(s, rope);
         }
     }
 }
