@@ -240,7 +240,11 @@ impl SelectionStorage {
         let to_col: usize = to.col.into();
         let from_col: usize = from.col.into();
         let from_line: usize = from.line.into();
-        let chars_delta: usize = to_col - from_col + 1;
+        let chars_delta: usize = if to_line == from_line {
+            to_col - from_col + 1
+        } else {
+            to_col
+        };
 
         to_delete.drop_selection_to_head();
         self.replace_selection(to_delete.clone());

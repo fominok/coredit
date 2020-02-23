@@ -88,7 +88,6 @@ fn test_deletion_multiple_selections_end_on_newline() {
 }
 
 #[test]
-#[ignore]
 fn test_deletion_multiple_multiline_selections_sharing_same_line() {
     let mut buffer = load_buffer_with_selections(&vec![(1, 55, 4, 34, true), (4, 63, 6, 16, true)]);
     buffer.delete();
@@ -100,10 +99,7 @@ fn test_deletion_multiple_multiline_selections_sharing_same_line() {
 }
 
 #[test]
-#[ignore]
 fn test_deletion_merge() {
-    better_panic::install();
-
     let mut buffer = load_buffer_with_selections(&vec![
         (1, 5, 1, 10, true),
         (3, 5, 3, 10, true),
@@ -112,7 +108,7 @@ fn test_deletion_merge() {
     for _ in 1..1337 {
         buffer.delete();
     }
-    let mut reference_buffer = Buffer::from_reader("This ".as_bytes()).unwrap();
+    let mut reference_buffer = Buffer::from_reader("This".as_bytes()).unwrap();
     reference_buffer.move_right(4, false);
     assert_eq!(buffer, reference_buffer);
 }
