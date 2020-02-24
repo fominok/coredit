@@ -28,7 +28,7 @@ impl Buffer {
     pub fn empty() -> Self {
         let rope = Rc::new(RefCell::new(Rope::from_str("")));
         Buffer {
-            rope: rope,
+            rope,
             selection_storage: SelectionStorage::new(),
         }
     }
@@ -38,7 +38,7 @@ impl Buffer {
             Rope::from_reader(reader).context(CreateFromReader)?,
         ));
         Ok(Buffer {
-            rope: rope,
+            rope,
             selection_storage: SelectionStorage::new(),
         })
     }

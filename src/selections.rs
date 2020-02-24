@@ -73,7 +73,7 @@ impl Selection {
                 line: tail_line.into(),
                 col: tail_col.into(),
             },
-            cursor_direction: cursor_direction,
+            cursor_direction,
             sticky_column: None,
         }
     }
@@ -267,11 +267,9 @@ impl Selection {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
                 self.sticky_column = sticky_column;
-            } else {
-                if let Some(sticky_column) = current_sticky_column {
-                    cursor.col = sticky_column.into();
-                    self.sticky_column = None;
-                }
+            } else if let Some(sticky_column) = current_sticky_column {
+                cursor.col = sticky_column;
+                self.sticky_column = None;
             }
         }
         self.fix_direction();
@@ -303,11 +301,9 @@ impl Selection {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
                 self.sticky_column = sticky_column;
-            } else {
-                if let Some(sticky_column) = current_sticky_column {
-                    cursor.col = sticky_column.into();
-                    self.sticky_column = None;
-                }
+            } else if let Some(sticky_column) = current_sticky_column {
+                cursor.col = sticky_column;
+                self.sticky_column = None;
             }
         } else {
             cursor.line.sub_assign(1);
