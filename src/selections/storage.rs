@@ -1,12 +1,11 @@
 use super::{CursorDirection, Position, Selection};
-use crate::LineLengh;
+use crate::LineLength;
 #[cfg(test)]
 mod tests;
 
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::ops::Deref;
 
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
@@ -77,47 +76,42 @@ impl SelectionStorage {
         }
     }
 
-    pub(crate) fn move_left<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_left<L: LineLength + Copy>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: D,
+        line_length: L,
     ) {
         self.apply_to_selections(move |s| {
-            s.move_left(n, extend, line_length.deref());
+            s.move_left(n, extend, line_length);
         });
     }
 
-    pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_right<L: LineLength + Copy>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: D,
+        line_length: L,
     ) {
         self.apply_to_selections(move |s| {
-            s.move_right(n, extend, line_length.deref());
+            s.move_right(n, extend, line_length);
         });
     }
 
-    pub(crate) fn move_up<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        n: usize,
-        extend: bool,
-        line_length: D,
-    ) {
+    pub(crate) fn move_up<L: LineLength + Copy>(&mut self, n: usize, extend: bool, line_length: L) {
         self.apply_to_selections(move |s| {
-            s.move_up(n, extend, line_length.deref());
+            s.move_up(n, extend, line_length);
         });
     }
 
-    pub(crate) fn move_down<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn move_down<L: LineLength + Copy>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: D,
+        line_length: L,
     ) {
         self.apply_to_selections(move |s| {
-            s.move_down(n, extend, line_length.deref());
+            s.move_down(n, extend, line_length);
         });
     }
 
@@ -174,10 +168,10 @@ impl SelectionStorage {
         self.iter().rev().find(|s| s.head < after.head)
     }
 
-    pub(crate) fn apply_delete<L: LineLengh, D: Deref<Target = L>>(
+    pub(crate) fn apply_delete<L: LineLength + Copy>(
         &mut self,
         mut to_delete: Selection,
-        line_length: D,
+        line_length: L,
     ) {
         // Selections on the same line will be moved left on delta;
         // if delta includes deleted newlines, then the line after deleted newlines

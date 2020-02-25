@@ -1,8 +1,7 @@
 //! Selections implementation
 pub(crate) mod storage;
 use crate::util::PositiveUsize;
-use crate::LineLengh;
-use std::ops::Deref;
+use crate::LineLength;
 #[cfg(test)]
 mod tests;
 
@@ -166,12 +165,7 @@ impl Selection {
     }
 
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_left<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        mut n: usize,
-        extend: bool,
-        line_length: D,
-    ) {
+    pub(crate) fn move_left<L: LineLength>(&mut self, mut n: usize, extend: bool, line_length: L) {
         let cursor = self.get_cursor_mut();
         loop {
             if n >= cursor.col.into() {
@@ -217,12 +211,7 @@ impl Selection {
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_right<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        mut n: usize,
-        extend: bool,
-        line_length: D,
-    ) {
+    pub(crate) fn move_right<L: LineLength>(&mut self, mut n: usize, extend: bool, line_length: L) {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
@@ -253,12 +242,7 @@ impl Selection {
     /// Move cursor up by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_up<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        n: usize,
-        extend: bool,
-        line_length: D,
-    ) {
+    pub(crate) fn move_up<L: LineLength>(&mut self, n: usize, extend: bool, line_length: L) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
@@ -281,12 +265,7 @@ impl Selection {
     /// Move cursor down by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_down<L: LineLengh, D: Deref<Target = L>>(
-        &mut self,
-        n: usize,
-        extend: bool,
-        line_length: D,
-    ) {
+    pub(crate) fn move_down<L: LineLength>(&mut self, n: usize, extend: bool, line_length: L) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = Into::<usize>::into(cursor.line) + n;

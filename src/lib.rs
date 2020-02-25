@@ -13,7 +13,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub(crate) trait LineLengh {
+pub(crate) trait LineLength {
     fn length(&self, line: usize) -> Option<usize>;
     fn count(&self) -> usize;
 }
@@ -23,13 +23,23 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    impl LineLengh for HashMap<usize, usize> {
+    impl LineLength for HashMap<usize, usize> {
         fn length(&self, line: usize) -> Option<usize> {
             self.get(&line).map(|x| *x)
         }
 
         fn count(&self) -> usize {
             *self.keys().max().unwrap_or(&0)
+        }
+    }
+
+    impl LineLength for &HashMap<usize, usize> {
+        fn length(&self, line: usize) -> Option<usize> {
+            (*self).length(line)
+        }
+
+        fn count(&self) -> usize {
+            (*self).count()
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::selections::storage::SelectionStorage;
-use crate::{CreateFromReader, LineLengh, Result};
+use crate::{CreateFromReader, LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
 use snafu::ResultExt;
@@ -118,7 +118,7 @@ impl Buffer {
     }
 }
 
-impl LineLengh for Rope {
+impl LineLength for Rope {
     fn length(&self, line: usize) -> Option<usize> {
         // `line` arg is starting from 1
 
@@ -134,5 +134,15 @@ impl LineLengh for Rope {
 
     fn count(&self) -> usize {
         self.len_lines()
+    }
+}
+
+impl LineLength for &Rope {
+    fn length(&self, line: usize) -> Option<usize> {
+        (*self).length(line)
+    }
+
+    fn count(&self) -> usize {
+        (*self).len_lines()
     }
 }
