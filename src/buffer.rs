@@ -3,11 +3,15 @@ use crate::{CreateFromReader, LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
 use snafu::ResultExt;
+use std::fmt;
 use std::io;
 
 #[cfg(test)]
 mod tests;
 
+/// The main structure to store and process text.
+///
+/// As usual for editors, could be created empty or from a reader.
 #[derive(Debug)]
 pub struct Buffer {
     rope: Rope,
@@ -22,6 +26,14 @@ impl PartialEq for Buffer {
 }
 
 impl Buffer {
+    /// Create an empty `Buffer`.
+    ///
+    /// ```
+    /// # use coredit::Buffer;
+    ///
+    /// let mut buffer = Buffer::empty();
+    /// assert_eq!(buffer.to_string(), "".to_string());
+    /// ```
     pub fn empty() -> Self {
         let rope = Rope::from_str("");
         Buffer {
@@ -30,6 +42,16 @@ impl Buffer {
         }
     }
 
+    /// Create `Buffer` from `Reader`.
+    ///
+    /// ```
+    /// # use coredit::Buffer;
+    /// use std::fs::File;
+    ///
+    /// let file = File::open("test_data/one_liner.txt").unwrap();
+    /// let mut buffer = Buffer::from_reader(file).unwrap();
+    /// assert_eq!(buffer.to_string(), "That was easy\n".to_string());
+    /// ```
     pub fn from_reader<R: io::Read>(reader: R) -> Result<Self> {
         let rope = Rope::from_reader(reader).context(CreateFromReader)?;
         Ok(Buffer {
@@ -38,18 +60,32 @@ impl Buffer {
         })
     }
 
+    /// Return Ropey's `Lines` iterator from line numbered `from_line`.
+    /// Note that first line has index 1.
+    pub fn lines_at(&self, from_line: usize) -> ropey::iter::Lines {
+        self.rope.lines_at(from_line.saturating_sub(1))
+    }
+
+    /// Move all cursors up by `n`, shrinking selections to length 1
+    /// if `extend` is not set.
     pub fn move_up(&mut self, n: usize, extend: bool) {
         self.selection_storage.move_up(n, extend, &self.rope);
     }
 
+    /// Move all cursors down by `n`, shrinking selections to length 1
+    /// if `extend` is not set.
     pub fn move_down(&mut self, n: usize, extend: bool) {
         self.selection_storage.move_down(n, extend, &self.rope);
     }
 
+    /// Move all cursors left by `n`, shrinking selections to length 1
+    /// if `extend` is not set.
     pub fn move_left(&mut self, n: usize, extend: bool) {
         self.selection_storage.move_left(n, extend, &self.rope);
     }
 
+    /// Move all cursors right by `n`, shrinking selections to length 1
+    /// if `extend` is not set.
     pub fn move_right(&mut self, n: usize, extend: bool) {
         self.selection_storage.move_right(n, extend, &self.rope);
     }
@@ -73,6 +109,10 @@ impl Buffer {
         self.rope.remove(ch_from..=ch_to);
     }
 
+    /// Insert `text` on all cursors.
+    ///
+    /// If selection's cursor is in front, then the selection will be moved
+    /// right; otherwise it will be extened.
     pub fn insert(&mut self, text: &str) {
         // Perform insertion reversed to prevent selections invalidation
         // on previous iteration if it were moved forward
@@ -96,6 +136,9 @@ impl Buffer {
         }
     }
 
+    /// Delete selected text for all selections.
+    ///
+    /// All selections will have length equal 1.
     pub fn delete(&mut self) {
         let mut current_selection = self.selection_storage.iter().rev().next();
 
@@ -144,5 +187,11 @@ impl LineLength for &Rope {
 
     fn count(&self) -> usize {
         (*self).len_lines()
+    }
+}
+
+impl fmt::Display for Buffer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.rope)
     }
 }

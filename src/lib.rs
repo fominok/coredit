@@ -1,3 +1,5 @@
+//! Crate providing `Buffer`: core part of your text editor
+#![deny(missing_docs)]
 mod buffer;
 mod selections;
 mod util;
@@ -5,12 +7,18 @@ pub use buffer::Buffer;
 use snafu::Snafu;
 use std::io;
 
+/// Crate's error type
 #[derive(Debug, Snafu)]
 pub enum Error {
+    /// Failure on buffer creation from `Reader`
     #[snafu(display("Unable to create buffer with reader: {}", source))]
-    CreateFromReader { source: io::Error },
+    CreateFromReader {
+        /// Source error raised by Ropey
+        source: io::Error,
+    },
 }
 
+/// Result with crate's error type applied
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub(crate) trait LineLength {
