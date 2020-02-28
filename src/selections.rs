@@ -123,16 +123,16 @@ impl Selection {
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
         match self.cursor_direction {
             CursorDirection::Forward => {
-                self.tail.line = PositiveUsize::new(line);
-                self.tail.col = PositiveUsize::new(col);
+                self.tail.line = line.into();
+                self.tail.col = col.into();
                 if !extend {
                     self.head = self.tail;
                     self.cursor_direction = CursorDirection::Forward;
                 }
             }
             CursorDirection::Backward => {
-                self.head.line = PositiveUsize::new(line);
-                self.head.col = PositiveUsize::new(col);
+                self.head.line = line.into();
+                self.head.col = col.into();
                 if !extend {
                     self.tail = self.head;
                     self.cursor_direction = CursorDirection::Forward;
@@ -169,9 +169,8 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         loop {
             if n >= cursor.col.into() {
-                if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line) - 1)
-                {
-                    n -= Into::<usize>::into(cursor.col);
+                if let Some(line_length) = line_length.length(cursor.line.get() - 1) {
+                    n -= cursor.col.get();
                     cursor.col = line_length.into();
                     cursor.line.sub_assign(1);
                 } else {
@@ -215,8 +214,8 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
-            if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
-                let remaining = line_length - Into::<usize>::into(cursor.col);
+            if let Some(line_length) = line_length.length(cursor.line.get()) {
+                let remaining = line_length - cursor.col.get();
                 if n > remaining {
                     cursor.col.add_assign(remaining);
                     fallback = *cursor;
@@ -246,8 +245,8 @@ impl Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
-        if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
-            if line_length < Into::<usize>::into(cursor.col) {
+        if let Some(line_length) = line_length.length(cursor.line.get()) {
+            if line_length < cursor.col.get() {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
                 self.sticky_column = sticky_column;
@@ -268,15 +267,15 @@ impl Selection {
     pub(crate) fn move_down<L: LineLength>(&mut self, n: usize, extend: bool, line_length: L) {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
-        let target: usize = Into::<usize>::into(cursor.line) + n;
+        let target: usize = cursor.line.get() + n;
         let lines_count = line_length.count();
         if target > lines_count {
             cursor.line = lines_count.into();
         } else {
             cursor.line.add_assign(n);
         }
-        if let Some(line_length) = line_length.length(Into::<usize>::into(cursor.line)) {
-            if line_length < Into::<usize>::into(cursor.col) {
+        if let Some(line_length) = line_length.length(cursor.line.get()) {
+            if line_length < cursor.col.get() {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
                 self.sticky_column = sticky_column;

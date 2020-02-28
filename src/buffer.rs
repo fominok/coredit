@@ -98,9 +98,7 @@ impl Buffer {
         // on previous iteration if it were moved forward
         for s in self.selection_storage.iter().rev() {
             let cursor = s.get_cursor();
-            let ch: usize = self.rope.line_to_char(Into::<usize>::into(cursor.line) - 1)
-                + Into::<usize>::into(cursor.col)
-                - 1;
+            let ch: usize = self.rope.line_to_char(cursor.line.get() - 1) + cursor.col.get() - 1;
             self.rope.insert(ch, text);
         }
 
@@ -127,14 +125,17 @@ impl Buffer {
             let from_line: usize = from.line.into();
             let to_line: usize = to.line.into();
 
-            let from_ch: usize =
-                self.rope.line_to_char(from_line - 1) + Into::<usize>::into(from.col) - 1;
+            let from_ch: usize = self.rope.line_to_char(from_line - 1) + from.col.get() - 1;
             let to_ch: usize = {
-                let to_line_length = self.rope.length(to_line);
-                if Into::<usize>::into(to.col) == to_line_length.unwrap() {
+                if to.col.get()
+                    == self
+                        .rope
+                        .length(to_line)
+                        .expect("Selection reached inconsistency")
+                {
                     self.rope.line_to_char(to_line).saturating_sub(1)
                 } else {
-                    self.rope.line_to_char(to_line - 1) + Into::<usize>::into(to.col) - 1
+                    self.rope.line_to_char(to_line - 1) + to.col.get() - 1
                 }
             };
 
@@ -165,7 +166,7 @@ impl Buffer {
         let ch_from = self.rope.line_to_char(from_line - 1) + from_col - 1;
         let ch_to: usize = {
             let to_line_length = self.rope.length(to_line);
-            if Into::<usize>::into(to_col) == to_line_length.unwrap() {
+            if to_col == to_line_length.unwrap() {
                 self.rope.line_to_char(to_line) - 1
             } else {
                 self.rope.line_to_char(to_line - 1) + to_col - 1

@@ -1,9 +1,11 @@
 //! Utility structures not strongly connected to text editing
-use derive_more::{Add, AddAssign, Display, Into};
+use derive_more::{Add, Display, Into};
 use std::ops::Sub;
 
-#[derive(Add, Display, Into, Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd, AddAssign)]
-pub struct PositiveUsize(usize);
+/// A helper wrapper that guarantees underlying `usize` is greater than 0.
+/// If by creation or subtraction opposite happens, it will be equal to 1.
+#[derive(Add, Display, Into, Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
+pub(crate) struct PositiveUsize(usize);
 
 impl Default for PositiveUsize {
     fn default() -> Self {
@@ -16,36 +18,34 @@ impl Sub for PositiveUsize {
 
     fn sub(self, other: Self) -> Self::Output {
         if self.0 <= other.0 {
-            1.into()
+            PositiveUsize(1)
         } else {
-            (self.0 - other.0).into()
+            PositiveUsize(self.0 - other.0)
         }
     }
 }
 
 impl From<usize> for PositiveUsize {
     fn from(value: usize) -> Self {
-        assert!(value > 0);
-        PositiveUsize(value)
+        PositiveUsize(if value > 0 { value } else { 1 })
     }
 }
 
 impl PositiveUsize {
-    pub fn new(value: usize) -> Self {
-        assert!(value > 0);
-        PositiveUsize(value)
-    }
-
-    pub fn sub_assign(&mut self, value: usize) {
-        if value > 0 {
-            *self = *self - PositiveUsize(value as usize)
+    pub(crate) fn sub_assign(&mut self, value: usize) {
+        if self.0 > value {
+            self.0 -= value;
+        } else {
+            self.0 = 1;
         }
     }
 
-    pub fn add_assign(&mut self, value: usize) {
-        if value > 0 {
-            *self += PositiveUsize(value as usize)
-        }
+    pub(crate) fn add_assign(&mut self, value: usize) {
+        self.0 += value
+    }
+
+    pub(crate) fn get(&self) -> usize {
+        self.0
     }
 }
 
@@ -56,7 +56,7 @@ mod tests {
     #[test]
     fn test_lower_bound() {
         let a: PositiveUsize = 228.into();
-        let b = PositiveUsize::new(322);
+        let b: PositiveUsize = 322.into();
 
         assert_eq!(a - b, PositiveUsize(1));
     }
@@ -64,7 +64,7 @@ mod tests {
     #[test]
     fn test_addition() {
         let a: PositiveUsize = 228.into();
-        let b = PositiveUsize::new(322);
+        let b: PositiveUsize = 322.into();
 
         assert_eq!(a + b, PositiveUsize(550));
     }

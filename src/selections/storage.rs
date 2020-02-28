@@ -193,8 +193,14 @@ impl SelectionStorage {
         to_delete.drop_selection_to_head();
         self.replace_selection(to_delete.clone());
 
+        // As all API operations are atomic there must be no inconsistency between
+        // selections and text after each operation
         let lines_delta = to_line - from_line
-            + if to_col == line_length.length(to_line).unwrap() {
+            + if to_col
+                == line_length
+                    .length(to_line)
+                    .expect("Selection reached inconsistency")
+            {
                 1
             } else {
                 0
@@ -245,9 +251,9 @@ impl SelectionStorage {
             let mut offset = n;
             for mut s in group {
                 if (s.cursor_direction == CursorDirection::Backward) || s.is_point() {
-                    s.head.col += offset.into();
+                    s.head.col.add_assign(offset);
                 }
-                s.tail.col += offset.into();
+                s.tail.col.add_assign(offset);
                 offset += n;
                 self.add_selection(s);
             }
@@ -259,19 +265,19 @@ impl SelectionStorage {
         let mut offset = n;
         for mut s in selections_old.into_iter().map(|x| x.0) {
             if s.is_point() {
-                s.head.line += offset.into();
+                s.head.line.add_assign(offset);
                 s.head.col = 1.into();
-                s.tail.line += offset.into();
+                s.tail.line.add_assign(offset);
                 s.tail.col = 1.into();
             } else if s.cursor_direction == CursorDirection::Backward {
                 let col_diff = s.tail.col - s.head.col + 1.into();
-                s.head.line += offset.into();
+                s.head.line.add_assign(offset);
                 s.head.col = 1.into();
-                s.tail.line += offset.into();
+                s.tail.line.add_assign(offset);
                 s.tail.col = col_diff;
             } else {
                 s.head.line.add_assign(offset - n);
-                s.tail.line += offset.into();
+                s.tail.line.add_assign(offset);
                 s.tail.col = 1.into();
             }
             offset += n;
