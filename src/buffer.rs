@@ -30,7 +30,6 @@ impl Buffer {
     ///
     /// ```
     /// # use coredit::Buffer;
-    ///
     /// let mut buffer = Buffer::empty();
     /// assert_eq!(buffer.to_string(), "".to_string());
     /// ```
@@ -90,32 +89,6 @@ impl Buffer {
         self.selection_storage.move_right(n, extend, &self.rope);
     }
 
-    #[cfg(test)]
-    fn insert_for_test(&mut self, line: usize, col: usize, text: &str) {
-        let ch = self.rope.line_to_char(line - 1) + col - 1;
-        self.rope.insert(ch, text);
-    }
-
-    #[cfg(test)]
-    fn delete_for_test(
-        &mut self,
-        from_line: usize,
-        from_col: usize,
-        to_line: usize,
-        to_col: usize,
-    ) {
-        let ch_from = self.rope.line_to_char(from_line - 1) + from_col - 1;
-        let ch_to: usize = {
-            let to_line_length = self.rope.length(to_line);
-            if Into::<usize>::into(to_col) == to_line_length.unwrap() {
-                self.rope.line_to_char(to_line) - 1
-            } else {
-                self.rope.line_to_char(to_line - 1) + to_col - 1
-            }
-        };
-        self.rope.remove(ch_from..=ch_to);
-    }
-
     /// Insert `text` on all cursors.
     ///
     /// If selection's cursor is in front, then the selection will be moved
@@ -171,6 +144,34 @@ impl Buffer {
                 self.rope.remove(from_ch..=to_ch);
             }
         }
+    }
+
+    // Helper functions for testing
+
+    #[cfg(test)]
+    fn insert_for_test(&mut self, line: usize, col: usize, text: &str) {
+        let ch = self.rope.line_to_char(line - 1) + col - 1;
+        self.rope.insert(ch, text);
+    }
+
+    #[cfg(test)]
+    fn delete_for_test(
+        &mut self,
+        from_line: usize,
+        from_col: usize,
+        to_line: usize,
+        to_col: usize,
+    ) {
+        let ch_from = self.rope.line_to_char(from_line - 1) + from_col - 1;
+        let ch_to: usize = {
+            let to_line_length = self.rope.length(to_line);
+            if Into::<usize>::into(to_col) == to_line_length.unwrap() {
+                self.rope.line_to_char(to_line) - 1
+            } else {
+                self.rope.line_to_char(to_line - 1) + to_col - 1
+            }
+        };
+        self.rope.remove(ch_from..=ch_to);
     }
 }
 
