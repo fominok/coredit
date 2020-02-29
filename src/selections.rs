@@ -1,4 +1,4 @@
-//! Selections implementation
+//! Code specific to individual selection
 pub(crate) mod storage;
 use crate::util::PositiveUsize;
 use crate::LineLength;
@@ -39,48 +39,29 @@ impl CursorDirection {
     }
 }
 
-/// Selection simply is as pair of positions, which are
-/// pairs of line/column values.
+/// Selection is as pair of positions, which are pairs of line/column values.
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct Selection {
+    /// One of the selection's ends nearest to the buffer's beginning
     head: Position,
+    /// One of the selection's ends nearest to the buffer's end
     tail: Position,
+    /// One of the selection's ends is marked as a "cursor", if it's on the right,
+    /// then selection's cursor direction is `Forward`.
     cursor_direction: CursorDirection,
+    /// If after up/down movement the selection happened to get onto a line which is
+    /// shorter than the previous one, then it will be placed in the line's and
+    /// remembering its previous column as a "sticky column". If a subsequent
+    /// up/down movement leads to a line longer than this value the sticky column
+    /// will restore the selection's original column. Left/right movements will
+    /// reset `sticky_column`.
     sticky_column: Option<PositiveUsize>,
 }
 
 impl Selection {
+    /// Check if the selection's length equals to 1.
     pub(crate) fn is_point(&self) -> bool {
         self.head == self.tail
-    }
-
-    /// A shortcut to create Position instances in place.
-    #[cfg(test)]
-    pub(crate) fn new_quick(
-        head_line: usize,
-        head_col: usize,
-        tail_line: usize,
-        tail_col: usize,
-        cursor_direction: CursorDirection,
-    ) -> Self {
-        Selection {
-            head: Position {
-                line: head_line.into(),
-                col: head_col.into(),
-            },
-            tail: Position {
-                line: tail_line.into(),
-                col: tail_col.into(),
-            },
-            cursor_direction,
-            sticky_column: None,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn with_sticky(mut self, sticky: usize) -> Self {
-        self.sticky_column = Some(sticky.into());
-        self
     }
 
     /// If something was moved too much and became reversed
@@ -117,32 +98,6 @@ impl Selection {
         self.cursor_direction = CursorDirection::Forward;
     }
 
-    /// As movements can be complicated, setting, on the contrary,
-    /// is an assignment of a cursor to an existing position
-    #[cfg(test)]
-    pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
-        match self.cursor_direction {
-            CursorDirection::Forward => {
-                self.tail.line = line.into();
-                self.tail.col = col.into();
-                if !extend {
-                    self.head = self.tail;
-                    self.cursor_direction = CursorDirection::Forward;
-                }
-            }
-            CursorDirection::Backward => {
-                self.head.line = line.into();
-                self.head.col = col.into();
-                if !extend {
-                    self.tail = self.head;
-                    self.cursor_direction = CursorDirection::Forward;
-                }
-            }
-        }
-        self.fix_direction();
-        self.drop_sticky();
-    }
-
     /// Get cursor reference
     pub(crate) fn get_cursor(&self) -> &Position {
         match self.cursor_direction {
@@ -163,6 +118,39 @@ impl Selection {
             CursorDirection::Backward => &mut self.head,
         }
     }
+
+    /// Move selection right keeping its shape if possible.
+    /// If it is a multiline selection then only head is affected.
+    ///
+    /// This is what happens on characters deletion before the selection.
+    pub(crate) fn nudge_left(&mut self, n: usize) {
+        self.head.col.sub_assign(n);
+        if self.tail.line == self.head.line {
+            self.tail.col.sub_assign(n);
+        }
+    }
+
+    /// Move selection right keeping its shape if possible.
+    /// If it is a multiline selection then only head is affected.
+    ///
+    /// This is what happens on characters insertion before the selection.
+    pub(crate) fn nudge_right(&mut self, n: usize) {
+        self.head.col.add_assign(n);
+        if self.tail.line == self.head.line {
+            self.tail.col.add_assign(n);
+        }
+    }
+
+    /// Move selection up keeping its shape.
+    /// No checks are made and lengths used as it is a helper method.
+    ///
+    /// This is what happens on newlines deletion above.
+    pub(crate) fn nudge_up(&mut self, n: usize) {
+        self.head.line.sub_assign(n);
+        self.tail.line.sub_assign(n);
+    }
+
+    // Actions triggered by user directly (meaning "move_x" command, not a helper methods):
 
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
     pub(crate) fn move_left<L: LineLength>(&mut self, mut n: usize, extend: bool, line_length: L) {
@@ -188,25 +176,6 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
-    }
-
-    pub(crate) fn nudge_left(&mut self, n: usize) {
-        self.head.col.sub_assign(n);
-        if self.tail.line == self.head.line {
-            self.tail.col.sub_assign(n);
-        }
-    }
-
-    pub(crate) fn nudge_right(&mut self, n: usize) {
-        self.head.col.add_assign(n);
-        if self.tail.line == self.head.line {
-            self.tail.col.add_assign(n);
-        }
-    }
-
-    pub(crate) fn nudge_up(&mut self, n: usize) {
-        self.head.line.sub_assign(n);
-        self.tail.line.sub_assign(n);
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
@@ -290,6 +259,64 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
+    }
+
+    // Helper methods related to testing:
+
+    /// A shortcut to create Position instances in place.
+    #[cfg(test)]
+    pub(crate) fn new_quick(
+        head_line: usize,
+        head_col: usize,
+        tail_line: usize,
+        tail_col: usize,
+        cursor_direction: CursorDirection,
+    ) -> Self {
+        Selection {
+            head: Position {
+                line: head_line.into(),
+                col: head_col.into(),
+            },
+            tail: Position {
+                line: tail_line.into(),
+                col: tail_col.into(),
+            },
+            cursor_direction,
+            sticky_column: None,
+        }
+    }
+
+    /// Set sticky column to the selection.
+    #[cfg(test)]
+    pub(crate) fn with_sticky(mut self, sticky: usize) -> Self {
+        self.sticky_column = Some(sticky.into());
+        self
+    }
+
+    /// As movements can be complicated, setting, on the contrary,
+    /// is an assignment of a cursor to an existing position
+    #[cfg(test)]
+    pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
+        match self.cursor_direction {
+            CursorDirection::Forward => {
+                self.tail.line = line.into();
+                self.tail.col = col.into();
+                if !extend {
+                    self.head = self.tail;
+                    self.cursor_direction = CursorDirection::Forward;
+                }
+            }
+            CursorDirection::Backward => {
+                self.head.line = line.into();
+                self.head.col = col.into();
+                if !extend {
+                    self.tail = self.head;
+                    self.cursor_direction = CursorDirection::Forward;
+                }
+            }
+        }
+        self.fix_direction();
+        self.drop_sticky();
     }
 }
 

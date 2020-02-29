@@ -18,7 +18,7 @@ reader and to draw current state. However, there is a minimal
 example in `examples` directory.
 
 Coredit doesn't try to be full-featured: it is busy storing
-text, doing manual edits and controlling selections.LSP
+text, doing manual changes and controlling selections. LSP
 integrations, Lua scripting, highlighting and `M-x doctor`
 could be main features of the text editor you made, but they
 should not belong to the buffer core.
