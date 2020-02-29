@@ -1,3 +1,5 @@
+//! Selections storage API with an implementation respecting multiple selections
+//! interaction.
 use super::{CursorDirection, Position, Selection};
 use crate::LineLength;
 #[cfg(test)]
@@ -16,21 +18,14 @@ pub(crate) struct SelectionStorage {
     // Rust std implementation's API is restrictive;
     // for instance, while doing insert it may be enough
     // to increment cursor positions which will not require
-    // any rebuilds of the tree
+    // any rebuilds of the tree.
+    //
+    // Also it relies on SelectionIntersect wrapper which Ord
+    // implementation does not respect antisymmetry outside
+    // current SelectionStorage implementation which inserts
+    // twice to eleminate overlaps.
     pub(crate) selections_tree: BTreeSet<SelectionIntersect>,
 }
-
-#[cfg(test)]
-impl PartialEq for SelectionStorage {
-    fn eq(&self, rhs: &Self) -> bool {
-        let self_vec: Vec<Selection> = self.selections_tree.iter().map(|x| x.0.clone()).collect();
-        let rhs_vec: Vec<Selection> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
-        self_vec == rhs_vec
-    }
-}
-
-#[cfg(test)]
-type SelectionQuick = (usize, usize, usize, usize, bool);
 
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
@@ -44,6 +39,10 @@ impl SelectionStorage {
         }
     }
 
+    /// Add a selection to the storage.
+    /// If storage contains a selection which overlaps with the input
+    /// they will be merged. This check is run twice: for head and for
+    /// tail.
     pub(crate) fn add_selection(&mut self, ns: Selection) {
         if let Some(mut s) = self.find_hit_take(ns.head) {
             s.tail = ns.tail;
@@ -58,12 +57,14 @@ impl SelectionStorage {
         }
     }
 
+    /// Finds a selection which covers input position and moves it out of the storage.
     fn find_hit_take(&mut self, s: Position) -> Option<Selection> {
         self.selections_tree
             .take(&Selection::from(s).into())
             .map(|si| si.0)
     }
 
+    /// Apply functions to each of selections making a new tree in place of the old one.
     fn apply_to_selections<F>(&mut self, mut f: F)
     where
         F: FnMut(&mut Selection) -> (),
@@ -76,6 +77,7 @@ impl SelectionStorage {
         }
     }
 
+    /// Move left all selections.
     pub(crate) fn move_left<L: LineLength + Copy>(
         &mut self,
         n: usize,
@@ -87,6 +89,7 @@ impl SelectionStorage {
         });
     }
 
+    /// Move right all selections.
     pub(crate) fn move_right<L: LineLength + Copy>(
         &mut self,
         n: usize,
@@ -98,12 +101,14 @@ impl SelectionStorage {
         });
     }
 
+    /// Move up all selections.
     pub(crate) fn move_up<L: LineLength + Copy>(&mut self, n: usize, extend: bool, line_length: L) {
         self.apply_to_selections(move |s| {
             s.move_up(n, extend, line_length);
         });
     }
 
+    /// Move down all selections.
     pub(crate) fn move_down<L: LineLength + Copy>(
         &mut self,
         n: usize,
@@ -115,39 +120,12 @@ impl SelectionStorage {
         });
     }
 
-    #[cfg(test)]
-    fn find_hit(&self, s: Position) -> Option<&Selection> {
-        self.selections_tree
-            .get(&Selection::from(s).into())
-            .map(|si| &si.0)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn gen_from_tuples(selections: &[SelectionQuick]) -> Self {
-        let mut storage = SelectionStorage::new();
-        let mut tree = BTreeSet::new();
-        for s in selections {
-            tree.insert(SelectionIntersect(Selection::new_quick(
-                s.0,
-                s.1,
-                s.2,
-                s.3,
-                if s.4 {
-                    CursorDirection::Forward
-                } else {
-                    CursorDirection::Backward
-                },
-            )));
-        }
-        storage.selections_tree = tree;
-
-        storage
-    }
-
+    /// Create an iterator
     pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = Selection> + '_ {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
+    /// Nudge all selections on `line` after specific column left.
     pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
@@ -164,20 +142,14 @@ impl SelectionStorage {
         }
     }
 
+    /// Get a left neighbour for the selection.
+    /// It will be `None` if called for the first selection in the buffer.
     pub(crate) fn get_first_before(&self, after: &Selection) -> Option<Selection> {
         self.iter().rev().find(|s| s.head < after.head)
     }
 
-    pub(crate) fn apply_delete<L: LineLength + Copy>(
-        &mut self,
-        mut to_delete: Selection,
-        line_length: L,
-    ) {
-        // Selections on the same line will be moved left on delta;
-        // if delta includes deleted newlines, then the line after deleted newlines
-        // will be appended to current and its selections will be moved left on chars delta
-        // and all subsequent selection will be moved up
-
+    /// Compute selection storage after the selection deletion.
+    pub(crate) fn apply_delete<L: LineLength>(&mut self, mut to_delete: Selection, line_length: L) {
         let (from, to) = to_delete.get_bounds();
         to_delete.drop_selection_to_head();
         let to_line: usize = to.line.into();
@@ -234,12 +206,18 @@ impl SelectionStorage {
         }
     }
 
+    /// Find a selection that overlaps with the input selection and replace it.
+    /// Used to shrink the selection to be cursor-sized.
     pub(crate) fn replace_selection(&mut self, to: Selection) {
         // TODO: perhaps we need some check here to verify that a replaced
         // selection won't overlap the next one
         self.selections_tree.replace(SelectionIntersect(to));
     }
 
+    /// Move selections right, accumulating movement from a previous selection,
+    /// independently for each line.
+    /// For instance, if `n = 3`, then first selection will be moved right by 3,
+    /// next -- by 6, then by 9 and so on; other lines start with 3 too.
     pub(crate) fn move_right_incremental(&mut self, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
@@ -260,6 +238,9 @@ impl SelectionStorage {
         }
     }
 
+    /// Move selections down, accumulating movement from a previous selection.
+    /// For instance, if `n = 3`, then first selection will be moved down by 3,
+    /// next -- by 6, then by 9 and so on.
     pub(crate) fn move_down_incremental(&mut self, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
         let mut offset = n;
@@ -284,6 +265,37 @@ impl SelectionStorage {
             self.add_selection(s);
         }
     }
+
+    // Test related stuff:
+
+    #[cfg(test)]
+    fn find_hit(&self, s: Position) -> Option<&Selection> {
+        self.selections_tree
+            .get(&Selection::from(s).into())
+            .map(|si| &si.0)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gen_from_tuples(selections: &[SelectionQuick]) -> Self {
+        let mut storage = SelectionStorage::new();
+        let mut tree = BTreeSet::new();
+        for s in selections {
+            tree.insert(SelectionIntersect(Selection::new_quick(
+                s.0,
+                s.1,
+                s.2,
+                s.3,
+                if s.4 {
+                    CursorDirection::Forward
+                } else {
+                    CursorDirection::Backward
+                },
+            )));
+        }
+        storage.selections_tree = tree;
+
+        storage
+    }
 }
 
 impl From<Selection> for SelectionIntersect {
@@ -298,8 +310,17 @@ impl From<SelectionIntersect> for Selection {
     }
 }
 
+/// Wrapper struct with which overrides Selections' equality behevior:
+/// if selections overlap, then they will be marked as equal in terms of
+/// `SelectionIntersect` type.
+///
+/// Note that if there are `a`, `b` and `c` selections which overlap their
+/// neighbour on the right, `a` and `c` won't be marked as equal, and it
+/// violates transitivity. Thus `SelectionIntersect` is a hack to tweak
+/// `BTreeSet` search and will be valid only within storage's `add_selection`
+/// implementation, which handles this case manually.
 #[derive(Debug)]
-pub(crate) struct SelectionIntersect(pub(crate) Selection);
+pub(crate) struct SelectionIntersect(Selection);
 
 impl Eq for SelectionIntersect {}
 
@@ -329,3 +350,17 @@ impl Ord for SelectionIntersect {
         }
     }
 }
+
+// Things required for tests:
+
+#[cfg(test)]
+impl PartialEq for SelectionStorage {
+    fn eq(&self, rhs: &Self) -> bool {
+        let self_vec: Vec<Selection> = self.selections_tree.iter().map(|x| x.0.clone()).collect();
+        let rhs_vec: Vec<Selection> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
+        self_vec == rhs_vec
+    }
+}
+
+#[cfg(test)]
+type SelectionQuick = (usize, usize, usize, usize, bool);
