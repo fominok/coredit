@@ -15,7 +15,7 @@ with sensible defaults, including multiple selections.
 ## What Coredit is not
 It's not an editor: at least you need to attach a keyboard
 reader and to draw current state. However, there is a minimal
-example in `examples` directory.
+editor in `examples` directory (`cargo run --example edi`).
 
 Coredit doesn't try to be full-featured: it is busy storing
 text, doing manual changes and controlling selections. LSP
