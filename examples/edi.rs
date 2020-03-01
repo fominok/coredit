@@ -1,6 +1,9 @@
 use coredit::Buffer;
+use itertools::Itertools;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
+use termion::color;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -21,9 +24,22 @@ fn main() {
             termion::clear::All,
         )
         .unwrap();
-        for line in buffer.lines_at(1) {
+
+        for line in buffer.get_rope().lines_at(1) {
             write!(stdout, "{}\r", line);
         }
+
+        // Overwrite with colored
+
+        //for s in buffer.selections_iter().group_by(|x| x.head.line) {
+        //    write!(
+        //        stdout,
+        //        "{}{}",
+        //        termion::cursor::Goto((s.bounds().0).0.try_into().unwrap(), (s.bounds().0).1.try_into().unwrap()),
+        //        color::Fg(color::Green)
+        //    )
+        //    .unwrap();
+        //}
 
         match c.unwrap() {
             Key::Char('q') => break,

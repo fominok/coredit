@@ -9,8 +9,8 @@ mod tests;
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
-    pub(crate) line: PositiveUsize,
-    pub(crate) col: PositiveUsize,
+    pub line: PositiveUsize,
+    pub col: PositiveUsize,
 }
 
 /// For selection the head must be less than the tail, but
@@ -43,12 +43,12 @@ impl CursorDirection {
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct Selection {
     /// One of the selection's ends nearest to the buffer's beginning
-    head: Position,
+    pub head: Position,
     /// One of the selection's ends nearest to the buffer's end
-    tail: Position,
+    pub tail: Position,
     /// One of the selection's ends is marked as a "cursor", if it's on the right,
     /// then selection's cursor direction is `Forward`.
-    cursor_direction: CursorDirection,
+    pub cursor_direction: CursorDirection,
     /// If after up/down movement the selection happened to get onto a line which is
     /// shorter than the previous one, then it will be placed in the line's and
     /// remembering its previous column as a "sticky column". If a subsequent

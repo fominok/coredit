@@ -1,4 +1,5 @@
 use crate::selections::storage::SelectionStorage;
+use crate::selections::Selection;
 use crate::{CreateFromReader, LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
@@ -59,10 +60,20 @@ impl Buffer {
         })
     }
 
-    /// Return Ropey's `Lines` iterator from line numbered `from_line`.
-    /// Note that first line has index 1.
-    pub fn lines_at(&self, from_line: usize) -> ropey::iter::Lines {
-        self.rope.lines_at(from_line.saturating_sub(1))
+    // /// Return Ropey's `Lines` iterator from line numbered `from_line`.
+    // /// Note that first line has index 1.
+    // pub fn lines_at(&self, from_line: usize) -> ropey::iter::Lines {
+    //     self.rope.lines_at(from_line.saturating_sub(1))
+    // }
+
+    /// Expose underlying Rope read-only way
+    pub fn get_rope(&self) -> &Rope {
+        &self.rope
+    }
+
+    /// Return an iterator over selections
+    pub fn selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
+        self.selection_storage.iter()
     }
 
     /// Move all cursors up by `n`, shrinking selections to length 1
