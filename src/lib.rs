@@ -4,6 +4,7 @@ mod buffer;
 mod selections;
 mod util;
 pub use buffer::Buffer;
+pub use selections::Position;
 use snafu::Snafu;
 use std::io;
 
@@ -29,10 +30,10 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 ///
 /// For selections thests usage of this trait makes a rope creation and
 /// filling unnecessary.
-pub(crate) trait LineLength {
+pub trait LineLength {
     /// Return the length of the line specified by `line`. Note the first
     /// line has the index equal 1.
-    fn length(&self, line: usize) -> Option<usize>;
+    fn line_length(&self, line: usize) -> Option<usize>;
 
     /// Return the count of lines.
     fn count(&self) -> usize;
@@ -47,7 +48,7 @@ mod tests {
     use std::collections::HashMap;
 
     impl LineLength for HashMap<usize, usize> {
-        fn length(&self, line: usize) -> Option<usize> {
+        fn line_length(&self, line: usize) -> Option<usize> {
             self.get(&line).map(|x| *x)
         }
 
@@ -57,8 +58,8 @@ mod tests {
     }
 
     impl LineLength for &HashMap<usize, usize> {
-        fn length(&self, line: usize) -> Option<usize> {
-            (*self).length(line)
+        fn line_length(&self, line: usize) -> Option<usize> {
+            (*self).line_length(line)
         }
 
         fn count(&self) -> usize {

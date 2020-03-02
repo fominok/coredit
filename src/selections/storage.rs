@@ -170,7 +170,7 @@ impl SelectionStorage {
         let lines_delta = to_line - from_line
             + if to_col
                 == line_length
-                    .length(to_line)
+                    .line_length(to_line)
                     .expect("Selection reached inconsistency")
             {
                 1

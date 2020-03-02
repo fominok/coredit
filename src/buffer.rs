@@ -141,7 +141,7 @@ impl Buffer {
                 if to.col.get()
                     == self
                         .rope
-                        .length(to_line)
+                        .line_length(to_line)
                         .expect("Selection reached inconsistency")
                 {
                     self.rope.line_to_char(to_line).saturating_sub(1)
@@ -176,7 +176,7 @@ impl Buffer {
     ) {
         let ch_from = self.rope.line_to_char(from_line - 1) + from_col - 1;
         let ch_to: usize = {
-            let to_line_length = self.rope.length(to_line);
+            let to_line_length = self.rope.line_length(to_line);
             if to_col == to_line_length.unwrap() {
                 self.rope.line_to_char(to_line) - 1
             } else {
@@ -188,7 +188,7 @@ impl Buffer {
 }
 
 impl LineLength for Rope {
-    fn length(&self, line: usize) -> Option<usize> {
+    fn line_length(&self, line: usize) -> Option<usize> {
         // `line` arg is starting from 1
 
         // FIXME: \n and \r do not cover all newline things afaik
@@ -207,8 +207,8 @@ impl LineLength for Rope {
 }
 
 impl LineLength for &Rope {
-    fn length(&self, line: usize) -> Option<usize> {
-        (*self).length(line)
+    fn line_length(&self, line: usize) -> Option<usize> {
+        (*self).line_length(line)
     }
 
     fn count(&self) -> usize {

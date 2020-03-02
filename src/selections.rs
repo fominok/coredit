@@ -9,7 +9,9 @@ mod tests;
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
+    /// One-indexed line
     pub line: PositiveUsize,
+    /// One-indexed column
     pub col: PositiveUsize,
 }
 
@@ -157,7 +159,7 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         loop {
             if n >= cursor.col.into() {
-                if let Some(line_length) = line_length.length(cursor.line.get() - 1) {
+                if let Some(line_length) = line_length.line_length(cursor.line.get() - 1) {
                     n -= cursor.col.get();
                     cursor.col = line_length.into();
                     cursor.line.sub_assign(1);
@@ -183,7 +185,7 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
-            if let Some(line_length) = line_length.length(cursor.line.get()) {
+            if let Some(line_length) = line_length.line_length(cursor.line.get()) {
                 let remaining = line_length - cursor.col.get();
                 if n > remaining {
                     cursor.col.add_assign(remaining);
@@ -214,7 +216,7 @@ impl Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
-        if let Some(line_length) = line_length.length(cursor.line.get()) {
+        if let Some(line_length) = line_length.line_length(cursor.line.get()) {
             if line_length < cursor.col.get() {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
@@ -243,7 +245,7 @@ impl Selection {
         } else {
             cursor.line.add_assign(n);
         }
-        if let Some(line_length) = line_length.length(cursor.line.get()) {
+        if let Some(line_length) = line_length.line_length(cursor.line.get()) {
             if line_length < cursor.col.get() {
                 let sticky_column = Some(cursor.col);
                 cursor.col = line_length.into();
