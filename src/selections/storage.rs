@@ -77,6 +77,13 @@ impl SelectionStorage {
         }
     }
 
+    /// Swap selections' cursor.
+    pub(crate) fn swap_cursor(&mut self) {
+        self.apply_to_selections(move |s| {
+            s.swap_cursor();
+        });
+    }
+
     /// Move left all selections.
     pub(crate) fn move_left<L: LineLength + Copy>(
         &mut self,

@@ -1,5 +1,5 @@
-use coredit::{Buffer, LineLength, Position};
-use itertools::Itertools;
+use better_panic;
+use coredit::{Buffer, CursorDirection, Position};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
@@ -14,10 +14,12 @@ fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
 }
 
 fn main() {
+    better_panic::install();
     let sample_file = File::open("test_data/sample_text.txt").unwrap();
     let mut buffer = Buffer::from_reader(sample_file).unwrap();
     buffer.move_right(5, false);
     buffer.move_right(10, true);
+    buffer.swap_cursor();
 
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -25,6 +27,20 @@ fn main() {
     write!(stdout, "Help:\r\nShift-C: place new cursors under existing ones\r\nESC: quit\r\nPress any key to continue...\r\n").unwrap();
 
     for c in stdin.keys() {
+        match c.unwrap() {
+            // Key::Char('q') => break,
+            // Key::Char(c) => println!("{}", c),
+            // Key::Alt(c) => println!("^{}", c),
+            // Key::Ctrl(c) => println!("*{}", c),
+            Key::Esc => break,
+            Key::Left => buffer.move_left(1, false),
+            Key::Right => buffer.move_right(1, false),
+            Key::Up => buffer.move_up(1, false),
+            Key::Down => buffer.move_down(1, false),
+            // Key::Backspace => println!("×"),
+            _ => {}
+        }
+
         write!(
             stdout,
             "{}{}{}",
@@ -35,7 +51,7 @@ fn main() {
         .unwrap();
 
         for line in buffer.get_rope().lines_at(0) {
-            write!(stdout, "{}\r", line);
+            write!(stdout, "{}\r", line).unwrap();
         }
 
         for s in buffer.selections_iter() {
@@ -47,47 +63,61 @@ fn main() {
                 termion::cursor::Goto(50, 50),
                 from_ch,
                 to_ch
-            );
-            let substr = buffer.get_rope().slice(from_ch..=to_ch);
+            )
+            .unwrap();
+            let first_char = buffer.get_rope().char(from_ch);
+
+            // Highlight cursor if selection is reversed
+            if s.cursor_direction == CursorDirection::Forward {
+                write!(stdout, "{}", color::Bg(color::Blue)).unwrap();
+            } else {
+                write!(stdout, "{}", color::Bg(color::Green)).unwrap();
+            }
             write!(
                 stdout,
-                "{}{}{}",
+                "{}{}",
                 termion::cursor::Goto(
                     s.head.col.get().try_into().unwrap(),
                     s.head.line.get().try_into().unwrap(),
                 ),
-                color::Bg(color::Blue),
-                substr
-            );
+                first_char
+            )
+            .unwrap();
+            if from_ch != to_ch {
+                let substr = buffer.get_rope().slice(from_ch + 1..to_ch);
+                let last_char = buffer.get_rope().char(to_ch);
+                // Draw other selection's data
+                write!(
+                    stdout,
+                    "{}{}{}",
+                    termion::cursor::Goto(
+                        TryInto::<u16>::try_into(s.head.col.get()).unwrap() + 1u16,
+                        TryInto::<u16>::try_into(s.head.line.get()).unwrap(),
+                    ),
+                    color::Bg(color::Blue),
+                    substr
+                )
+                .unwrap();
+                // Highlight cursor if cursor is in the selection's end
 
-            //buffer.get_rope().line(k
+                if s.cursor_direction == CursorDirection::Backward {
+                    write!(stdout, "{}", color::Bg(color::Blue)).unwrap();
+                } else {
+                    write!(stdout, "{}", color::Bg(color::Green)).unwrap();
+                }
+                write!(
+                    stdout,
+                    "{}{}",
+                    termion::cursor::Goto(
+                        s.tail.col.get().try_into().unwrap(),
+                        s.tail.line.get().try_into().unwrap(),
+                    ),
+                    last_char
+                )
+                .unwrap();
+            }
         }
-
-        // Overwrite with colored
-
-        //for s in buffer.selections_iter().group_by(|x| x.head.line) {
-        //    write!(
-        //        stdout,
-        //        "{}{}",
-        //        termion::cursor::Goto((s.bounds().0).0.try_into().unwrap(), (s.bounds().0).1.try_into().unwrap()),
-        //        color::Fg(color::Green)
-        //    )
-        //    .unwrap();
-        //}
-
-        match c.unwrap() {
-            // Key::Char('q') => break,
-            // Key::Char(c) => println!("{}", c),
-            // Key::Alt(c) => println!("^{}", c),
-            // Key::Ctrl(c) => println!("*{}", c),
-            Key::Esc => break,
-            // Key::Left => println!("←"),
-            // Key::Right => println!("→"),
-            // Key::Up => println!("↑"),
-            // Key::Down => println!("↓"),
-            // Key::Backspace => println!("×"),
-            _ => {}
-        }
+        write!(stdout, "{}", termion::cursor::Hide).unwrap();
         stdout.flush().unwrap();
     }
 

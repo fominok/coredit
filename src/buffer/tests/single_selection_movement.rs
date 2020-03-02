@@ -1,4 +1,5 @@
 use super::*;
+use crate::selections::{CursorDirection, Selection};
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -7,6 +8,17 @@ fn move_right_simple() {
     let mut buffer = load_buffer();
     buffer.move_right(30, false);
     let reference_buffer = load_buffer_with_selections(&vec![(1, 31, 1, 31, true)]);
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+fn move_left_simple() {
+    let mut buffer = load_buffer();
+    buffer.move_right(5, false);
+    buffer.move_right(30, true);
+    buffer.swap_cursor();
+    buffer.move_left(1, false);
+    let reference_buffer = load_buffer_with_selections(&vec![(1, 5, 1, 5, true)]);
     assert_eq!(buffer, reference_buffer);
 }
 
@@ -47,6 +59,52 @@ fn move_up_sticky_and_overflow() {
     buffer.move_left(1, false);
     buffer.move_up(322, false);
     let reference_buffer = load_buffer_with_selections(&vec![(1, 20, 1, 20, true)]);
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+fn move_up_sticky_n_times() {
+    let mut buffer = load_buffer_with_selections(&vec![(7, 37, 7, 37, true)]);
+    buffer.move_up(1, false);
+    buffer.move_up(1, false);
+    buffer.move_up(1, false);
+    buffer.move_up(1, false);
+    buffer.move_up(1, false);
+    buffer.move_up(1, false);
+    let reference_buffer = load_buffer_with_selections(&vec![(1, 37, 1, 37, true)]);
+    assert_eq!(buffer, reference_buffer);
+}
+
+#[test]
+fn move_down_sticky_n_times() {
+    let mut buffer = load_buffer_with_selections(&vec![(1, 37, 1, 37, true)]);
+    buffer.move_down(1, false);
+    assert_eq!(
+        buffer.selections_iter().collect::<Vec<Selection>>(),
+        vec![Selection::new_quick(2, 1, 2, 1, CursorDirection::Forward).with_sticky(37)]
+    );
+    buffer.move_down(1, false);
+    assert_eq!(
+        buffer.selections_iter().collect::<Vec<Selection>>(),
+        vec![Selection::new_quick(3, 21, 3, 21, CursorDirection::Forward).with_sticky(37)]
+    );
+    buffer.move_down(1, false);
+    assert_eq!(
+        buffer.selections_iter().collect::<Vec<Selection>>(),
+        vec![Selection::new_quick(4, 37, 4, 37, CursorDirection::Forward)]
+    );
+    buffer.move_down(1, false);
+    assert_eq!(
+        buffer.selections_iter().collect::<Vec<Selection>>(),
+        vec![Selection::new_quick(5, 25, 5, 25, CursorDirection::Forward).with_sticky(37)]
+    );
+    buffer.move_down(1, false);
+    assert_eq!(
+        buffer.selections_iter().collect::<Vec<Selection>>(),
+        vec![Selection::new_quick(6, 37, 6, 37, CursorDirection::Forward)]
+    );
+    buffer.move_down(1, false);
+    let reference_buffer = load_buffer_with_selections(&vec![(7, 37, 7, 37, true)]);
     assert_eq!(buffer, reference_buffer);
 }
 

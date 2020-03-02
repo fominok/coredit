@@ -66,12 +66,19 @@ impl Selection {
         self.head == self.tail
     }
 
+    /// Swap selection's cursor.
+    pub(crate) fn swap_cursor(&mut self) {
+        if self.head != self.tail {
+            self.cursor_direction.inverse();
+        }
+    }
+
     /// If something was moved too much and became reversed
     /// let's fix head/tail and change direction
     fn fix_direction(&mut self) {
         if self.head > self.tail {
             std::mem::swap(&mut self.head, &mut self.tail);
-            self.cursor_direction.inverse();
+            self.swap_cursor();
         }
     }
 
@@ -217,13 +224,19 @@ impl Selection {
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
         if let Some(line_length) = line_length.line_length(cursor.line.get()) {
-            if line_length < cursor.col.get() {
-                let sticky_column = Some(cursor.col);
-                cursor.col = line_length.into();
-                self.sticky_column = sticky_column;
-            } else if let Some(sticky_column) = current_sticky_column {
-                cursor.col = sticky_column;
-                self.sticky_column = None;
+            if let Some(sticky_column) = current_sticky_column {
+                if sticky_column.get() < line_length {
+                    cursor.col = sticky_column;
+                    self.sticky_column = None;
+                } else {
+                    cursor.col = line_length.into();
+                }
+            } else {
+                if line_length < cursor.col.get() {
+                    let sticky_column = Some(cursor.col);
+                    cursor.col = line_length.into();
+                    self.sticky_column = sticky_column;
+                }
             }
         }
         self.fix_direction();
@@ -246,16 +259,20 @@ impl Selection {
             cursor.line.add_assign(n);
         }
         if let Some(line_length) = line_length.line_length(cursor.line.get()) {
-            if line_length < cursor.col.get() {
-                let sticky_column = Some(cursor.col);
-                cursor.col = line_length.into();
-                self.sticky_column = sticky_column;
-            } else if let Some(sticky_column) = current_sticky_column {
-                cursor.col = sticky_column;
-                self.sticky_column = None;
+            if let Some(sticky_column) = current_sticky_column {
+                if sticky_column.get() < line_length {
+                    cursor.col = sticky_column;
+                    self.sticky_column = None;
+                } else {
+                    cursor.col = line_length.into();
+                }
+            } else {
+                if line_length < cursor.col.get() {
+                    let sticky_column = Some(cursor.col);
+                    cursor.col = line_length.into();
+                    self.sticky_column = sticky_column;
+                }
             }
-        } else {
-            cursor.line.sub_assign(1);
         }
         self.fix_direction();
         if !extend {

@@ -4,7 +4,7 @@ mod buffer;
 mod selections;
 mod util;
 pub use buffer::Buffer;
-pub use selections::Position;
+pub use selections::{CursorDirection, Position};
 use snafu::Snafu;
 use std::io;
 

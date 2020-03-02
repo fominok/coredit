@@ -76,6 +76,11 @@ impl Buffer {
         self.selection_storage.iter()
     }
 
+    /// Swap selections' cursor position.
+    pub fn swap_cursor(&mut self) {
+        self.selection_storage.swap_cursor();
+    }
+
     /// Move all cursors up by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_up(&mut self, n: usize, extend: bool) {
