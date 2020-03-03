@@ -1,5 +1,5 @@
 use better_panic;
-use coredit::{Buffer, CursorDirection, Position};
+use coredit::{Buffer, CursorDirection, LineLength, Position};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
@@ -7,6 +7,9 @@ use termion::color;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+
+// TODO: draw line and selections part in it simultaneously as insertion with NL
+// as directly as characters doesn't handle CR
 
 fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
     //let line_length = b.get_rope().line_length(p.line.get()).unwrap();
@@ -33,10 +36,24 @@ fn main() {
             // Key::Alt(c) => println!("^{}", c),
             // Key::Ctrl(c) => println!("*{}", c),
             Key::Esc => break,
-            Key::Left => buffer.move_left(1, false),
-            Key::Right => buffer.move_right(1, false),
-            Key::Up => buffer.move_up(1, false),
-            Key::Down => buffer.move_down(1, false),
+            //Key::Left => buffer.move_left(1, false),
+            //Key::Right => buffer.move_right(1, false),
+            //Key::Up => buffer.move_up(1, false),
+            //Key::Down => buffer.move_down(1, false),
+            Key::Alt(c) => match c {
+                'h' => buffer.move_left(1, false),
+                'l' => buffer.move_right(1, false),
+                'k' => buffer.move_up(1, false),
+                'j' => buffer.move_down(1, false),
+                _ => {}
+            },
+            Key::Char(c) => match c {
+                'H' => buffer.move_left(1, true),
+                'L' => buffer.move_right(1, true),
+                'K' => buffer.move_up(1, true),
+                'J' => buffer.move_down(1, true),
+                _ => {}
+            },
             // Key::Backspace => println!("×"),
             _ => {}
         }
@@ -65,7 +82,10 @@ fn main() {
                 to_ch
             )
             .unwrap();
-            let first_char = buffer.get_rope().char(from_ch);
+            let mut first_char = buffer.get_rope().char(from_ch);
+            if buffer.get_rope().line_length(s.head.line.get()).unwrap() == s.head.col.get() {
+                first_char = ' ';
+            }
 
             // Highlight cursor if selection is reversed
             if s.cursor_direction == CursorDirection::Forward {
