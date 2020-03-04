@@ -48,11 +48,11 @@ fn test_selection_storage_search_some() {
             })
             .unwrap(),
         Selection {
-            head: Position {
+            from: Position {
                 line: 3.into(),
                 col: 10.into()
             },
-            tail: Position {
+            to: Position {
                 line: 5.into(),
                 col: 130.into()
             },

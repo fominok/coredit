@@ -10,9 +10,9 @@ mod tests;
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
     /// One-indexed line
-    pub line: PositiveUsize,
+    pub(crate) line: PositiveUsize,
     /// One-indexed column
-    pub col: PositiveUsize,
+    pub(crate) col: PositiveUsize,
 }
 
 /// For selection the head must be less than the tail, but
@@ -45,9 +45,9 @@ impl CursorDirection {
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct Selection {
     /// One of the selection's ends nearest to the buffer's beginning
-    pub head: Position,
+    pub from: Position,
     /// One of the selection's ends nearest to the buffer's end
-    pub tail: Position,
+    pub to: Position,
     /// One of the selection's ends is marked as a "cursor", if it's on the right,
     /// then selection's cursor direction is `Forward`.
     pub cursor_direction: CursorDirection,
@@ -63,12 +63,12 @@ pub struct Selection {
 impl Selection {
     /// Check if the selection's length equals to 1.
     pub(crate) fn is_point(&self) -> bool {
-        self.head == self.tail
+        self.from == self.to
     }
 
     /// Swap selection's cursor.
     pub(crate) fn swap_cursor(&mut self) {
-        if self.head != self.tail {
+        if self.from != self.to {
             self.cursor_direction.inverse();
         }
     }
@@ -76,8 +76,8 @@ impl Selection {
     /// If something was moved too much and became reversed
     /// let's fix head/tail and change direction
     fn fix_direction(&mut self) {
-        if self.head > self.tail {
-            std::mem::swap(&mut self.head, &mut self.tail);
+        if self.from > self.to {
+            std::mem::swap(&mut self.from, &mut self.to);
             self.swap_cursor();
         }
     }
@@ -91,11 +91,11 @@ impl Selection {
     fn drop_selection(&mut self) {
         match self.cursor_direction {
             CursorDirection::Forward => {
-                self.head = self.tail;
+                self.from = self.to;
                 self.cursor_direction = CursorDirection::Forward;
             }
             CursorDirection::Backward => {
-                self.tail = self.head;
+                self.to = self.from;
                 self.cursor_direction = CursorDirection::Forward;
             }
         }
@@ -103,28 +103,28 @@ impl Selection {
 
     /// Drop selection to 1-length but always to the beginning
     pub(crate) fn drop_selection_to_head(&mut self) {
-        self.tail = self.head;
+        self.to = self.from;
         self.cursor_direction = CursorDirection::Forward;
     }
 
     /// Get cursor reference
     pub(crate) fn get_cursor(&self) -> &Position {
         match self.cursor_direction {
-            CursorDirection::Forward => &self.tail,
-            CursorDirection::Backward => &self.head,
+            CursorDirection::Forward => &self.to,
+            CursorDirection::Backward => &self.from,
         }
     }
 
     /// Get positions pair references
     pub(crate) fn get_bounds(&self) -> (Position, Position) {
-        (self.head, self.tail)
+        (self.from, self.to)
     }
 
     /// Get cursor mutable reference for inplace operations
     pub(crate) fn get_cursor_mut(&mut self) -> &mut Position {
         match self.cursor_direction {
-            CursorDirection::Forward => &mut self.tail,
-            CursorDirection::Backward => &mut self.head,
+            CursorDirection::Forward => &mut self.to,
+            CursorDirection::Backward => &mut self.from,
         }
     }
 
@@ -133,9 +133,9 @@ impl Selection {
     ///
     /// This is what happens on characters deletion before the selection.
     pub(crate) fn nudge_left(&mut self, n: usize) {
-        self.head.col.sub_assign(n);
-        if self.tail.line == self.head.line {
-            self.tail.col.sub_assign(n);
+        self.from.col.sub_assign(n);
+        if self.to.line == self.from.line {
+            self.to.col.sub_assign(n);
         }
     }
 
@@ -144,9 +144,9 @@ impl Selection {
     ///
     /// This is what happens on characters insertion before the selection.
     pub(crate) fn nudge_right(&mut self, n: usize) {
-        self.head.col.add_assign(n);
-        if self.tail.line == self.head.line {
-            self.tail.col.add_assign(n);
+        self.from.col.add_assign(n);
+        if self.to.line == self.from.line {
+            self.to.col.add_assign(n);
         }
     }
 
@@ -155,8 +155,8 @@ impl Selection {
     ///
     /// This is what happens on newlines deletion above.
     pub(crate) fn nudge_up(&mut self, n: usize) {
-        self.head.line.sub_assign(n);
-        self.tail.line.sub_assign(n);
+        self.from.line.sub_assign(n);
+        self.to.line.sub_assign(n);
     }
 
     // Actions triggered by user directly (meaning "move_x" command, not a helper methods):
@@ -292,11 +292,11 @@ impl Selection {
         cursor_direction: CursorDirection,
     ) -> Self {
         Selection {
-            head: Position {
+            from: Position {
                 line: head_line.into(),
                 col: head_col.into(),
             },
-            tail: Position {
+            to: Position {
                 line: tail_line.into(),
                 col: tail_col.into(),
             },
@@ -318,18 +318,18 @@ impl Selection {
     pub(crate) fn set(&mut self, line: usize, col: usize, extend: bool) {
         match self.cursor_direction {
             CursorDirection::Forward => {
-                self.tail.line = line.into();
-                self.tail.col = col.into();
+                self.to.line = line.into();
+                self.to.col = col.into();
                 if !extend {
-                    self.head = self.tail;
+                    self.from = self.to;
                     self.cursor_direction = CursorDirection::Forward;
                 }
             }
             CursorDirection::Backward => {
-                self.head.line = line.into();
-                self.head.col = col.into();
+                self.from.line = line.into();
+                self.from.col = col.into();
                 if !extend {
-                    self.tail = self.head;
+                    self.to = self.from;
                     self.cursor_direction = CursorDirection::Forward;
                 }
             }
@@ -344,8 +344,8 @@ impl Selection {
 impl From<Position> for Selection {
     fn from(position: Position) -> Self {
         Selection {
-            head: position,
-            tail: position,
+            from: position,
+            to: position,
             cursor_direction: CursorDirection::Forward,
             sticky_column: None,
         }

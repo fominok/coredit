@@ -1,5 +1,5 @@
-use crate::selections::storage::SelectionStorage;
-use crate::selections::Selection;
+use crate::selections::storage::{SelectionIntersect, SelectionStorage};
+use crate::selections::{Position, Selection};
 use crate::{CreateFromReader, LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
@@ -74,6 +74,19 @@ impl Buffer {
     /// Return an iterator over selections
     pub fn selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
         self.selection_storage.iter()
+    }
+
+    /// Return an iterator over selection since `line`
+    pub fn selections_at(&self, line: usize) -> impl Iterator<Item = &Selection> + '_ {
+        let pos: SelectionIntersect = Selection::from(Position {
+            line: line.into(),
+            col: 1.into(),
+        })
+        .into();
+        self.selection_storage
+            .selections_tree
+            .range(pos..)
+            .map(|si| &si.0)
     }
 
     /// Swap selections' cursor position.

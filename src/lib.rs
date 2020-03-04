@@ -4,7 +4,8 @@ mod buffer;
 mod selections;
 mod util;
 pub use buffer::Buffer;
-pub use selections::{CursorDirection, Position};
+use ropey::RopeSlice;
+pub use selections::CursorDirection;
 use snafu::Snafu;
 use std::io;
 
@@ -37,6 +38,50 @@ pub trait LineLength {
 
     /// Return the count of lines.
     fn count(&self) -> usize;
+}
+
+// The next one is aimed to hide `PositiveUsize` from API
+
+/// Coordinates in a buffer
+pub struct Position {
+    /// One-indexed line
+    pub line: usize,
+    /// One-indexed column
+    pub col: usize,
+}
+
+impl From<selections::Position> for Position {
+    fn from(p: selections::Position) -> Self {
+        Position {
+            line: p.line.get(),
+            col: p.col.get(),
+        }
+    }
+}
+
+/// Chunk of text
+pub enum Chunk<'a> {
+    /// A text selection
+    SelectedText {
+        /// Position where the selection starts
+        from: Position,
+        /// Position where the selection ends
+        to: Position,
+        /// As `from` <= `to` is always true, the direction is specified with this field
+        cursor_direction: CursorDirection,
+        /// Underlying text
+        text: RopeSlice<'a>,
+    },
+    /// Opposite of selection, the difference that is has no
+    /// direction
+    UnselectedText {
+        /// Position where the selection starts
+        from: Position,
+        /// Position where the selection ends
+        to: Position,
+        /// Underlying text
+        text: RopeSlice<'a>,
+    },
 }
 
 #[cfg(test)]

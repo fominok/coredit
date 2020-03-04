@@ -44,13 +44,13 @@ impl SelectionStorage {
     /// they will be merged. This check is run twice: for head and for
     /// tail.
     pub(crate) fn add_selection(&mut self, ns: Selection) {
-        if let Some(mut s) = self.find_hit_take(ns.head) {
-            s.tail = ns.tail;
+        if let Some(mut s) = self.find_hit_take(ns.from) {
+            s.to = ns.to;
             // Here is a recursive call to verify that the new selection
             // has no overlaps
             self.add_selection(s);
-        } else if let Some(mut s) = self.find_hit_take(ns.tail) {
-            s.head = ns.head;
+        } else if let Some(mut s) = self.find_hit_take(ns.to) {
+            s.from = ns.from;
             self.add_selection(s);
         } else {
             self.selections_tree.insert(ns.into());
@@ -139,7 +139,7 @@ impl SelectionStorage {
         let (on_the_line, others): (Vec<Selection>, Vec<Selection>) = selections_old
             .into_iter()
             .map(|x| x.0)
-            .partition(|x| x.head.line == line.into() && x.head.col > after.into());
+            .partition(|x| x.from.line == line.into() && x.from.col > after.into());
         for mut s in on_the_line {
             s.nudge_left(n);
             self.add_selection(s);
@@ -152,7 +152,7 @@ impl SelectionStorage {
     /// Get a left neighbour for the selection.
     /// It will be `None` if called for the first selection in the buffer.
     pub(crate) fn get_first_before(&self, after: &Selection) -> Option<Selection> {
-        self.iter().rev().find(|s| s.head < after.head)
+        self.iter().rev().find(|s| s.from < after.from)
     }
 
     /// Compute selection storage after the selection deletion.
@@ -193,7 +193,7 @@ impl SelectionStorage {
             let (selections_after, others): (Vec<Selection>, Vec<Selection>) = selections_old
                 .into_iter()
                 .map(|x| x.0)
-                .partition(|x| x.head > to_delete.tail);
+                .partition(|x| x.from > to_delete.to);
 
             let mut selections_after_iter = selections_after.into_iter();
             if let Some(mut first_after) = selections_after_iter.next() {
@@ -231,14 +231,14 @@ impl SelectionStorage {
         let line_grouped = selections_old
             .into_iter()
             .map(|x| x.0)
-            .group_by(|x| x.head.line);
+            .group_by(|x| x.from.line);
         for (_, group) in &line_grouped {
             let mut offset = n;
             for mut s in group {
                 if (s.cursor_direction == CursorDirection::Backward) || s.is_point() {
-                    s.head.col.add_assign(offset);
+                    s.from.col.add_assign(offset);
                 }
-                s.tail.col.add_assign(offset);
+                s.to.col.add_assign(offset);
                 offset += n;
                 self.add_selection(s);
             }
@@ -253,20 +253,20 @@ impl SelectionStorage {
         let mut offset = n;
         for mut s in selections_old.into_iter().map(|x| x.0) {
             if s.is_point() {
-                s.head.line.add_assign(offset);
-                s.head.col = 1.into();
-                s.tail.line.add_assign(offset);
-                s.tail.col = 1.into();
+                s.from.line.add_assign(offset);
+                s.from.col = 1.into();
+                s.to.line.add_assign(offset);
+                s.to.col = 1.into();
             } else if s.cursor_direction == CursorDirection::Backward {
-                let col_diff = s.tail.col - s.head.col + 1.into();
-                s.head.line.add_assign(offset);
-                s.head.col = 1.into();
-                s.tail.line.add_assign(offset);
-                s.tail.col = col_diff;
+                let col_diff = s.to.col - s.from.col + 1.into();
+                s.from.line.add_assign(offset);
+                s.from.col = 1.into();
+                s.to.line.add_assign(offset);
+                s.to.col = col_diff;
             } else {
-                s.head.line.add_assign(offset - n);
-                s.tail.line.add_assign(offset);
-                s.tail.col = 1.into();
+                s.from.line.add_assign(offset - n);
+                s.to.line.add_assign(offset);
+                s.to.col = 1.into();
             }
             offset += n;
             self.add_selection(s);
@@ -327,7 +327,7 @@ impl From<SelectionIntersect> for Selection {
 /// `BTreeSet` search and will be valid only within storage's `add_selection`
 /// implementation, which handles this case manually.
 #[derive(Debug)]
-pub(crate) struct SelectionIntersect(Selection);
+pub(crate) struct SelectionIntersect(pub(crate) Selection);
 
 impl Eq for SelectionIntersect {}
 
@@ -335,7 +335,7 @@ impl PartialEq for SelectionIntersect {
     fn eq(&self, rhs: &Self) -> bool {
         let x = &self.0;
         let y = &rhs.0;
-        x.head <= y.tail && y.head <= x.tail
+        x.from <= y.to && y.from <= x.to
     }
 }
 
@@ -353,7 +353,7 @@ impl Ord for SelectionIntersect {
             Ordering::Equal
         } else {
             // Else they should be compared by heads
-            self.0.head.cmp(&rhs.0.head)
+            self.0.from.cmp(&rhs.0.from)
         }
     }
 }
