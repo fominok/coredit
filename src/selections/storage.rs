@@ -151,8 +151,8 @@ impl SelectionStorage {
 
     /// Get a left neighbour for the selection.
     /// It will be `None` if called for the first selection in the buffer.
-    pub(crate) fn get_first_before(&self, after: &Selection) -> Option<Selection> {
-        self.iter().rev().find(|s| s.from < after.from)
+    pub(crate) fn get_first_before(&self, before: &Selection) -> Option<Selection> {
+        self.iter().rev().find(|s| s.to < before.from)
     }
 
     /// Compute selection storage after the selection deletion.

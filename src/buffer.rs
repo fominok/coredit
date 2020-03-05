@@ -72,8 +72,8 @@ impl Buffer {
     }
 
     /// Return an iterator over selections
-    pub fn selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
-        self.selection_storage.iter()
+    pub fn selections_iter(&self) -> impl Iterator<Item = crate::Selection> + '_ {
+        self.selection_storage.iter().map(|s| s.into())
     }
 
     /// Return an iterator over selection since `line`
@@ -177,6 +177,12 @@ impl Buffer {
     }
 
     // Helper functions for testing
+
+    /// Return an iterator over internal selections' representation
+    #[cfg(test)]
+    pub(crate) fn internal_selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
+        self.selection_storage.iter()
+    }
 
     #[cfg(test)]
     fn insert_for_test(&mut self, line: usize, col: usize, text: &str) {

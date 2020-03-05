@@ -80,27 +80,37 @@ fn move_down_sticky_n_times() {
     let mut buffer = load_buffer_with_selections(&vec![(1, 37, 1, 37, true)]);
     buffer.move_down(1, false);
     assert_eq!(
-        buffer.selections_iter().collect::<Vec<Selection>>(),
+        buffer
+            .internal_selections_iter()
+            .collect::<Vec<Selection>>(),
         vec![Selection::new_quick(2, 1, 2, 1, CursorDirection::Forward).with_sticky(37)]
     );
     buffer.move_down(1, false);
     assert_eq!(
-        buffer.selections_iter().collect::<Vec<Selection>>(),
+        buffer
+            .internal_selections_iter()
+            .collect::<Vec<Selection>>(),
         vec![Selection::new_quick(3, 21, 3, 21, CursorDirection::Forward).with_sticky(37)]
     );
     buffer.move_down(1, false);
     assert_eq!(
-        buffer.selections_iter().collect::<Vec<Selection>>(),
+        buffer
+            .internal_selections_iter()
+            .collect::<Vec<Selection>>(),
         vec![Selection::new_quick(4, 37, 4, 37, CursorDirection::Forward)]
     );
     buffer.move_down(1, false);
     assert_eq!(
-        buffer.selections_iter().collect::<Vec<Selection>>(),
+        buffer
+            .internal_selections_iter()
+            .collect::<Vec<Selection>>(),
         vec![Selection::new_quick(5, 25, 5, 25, CursorDirection::Forward).with_sticky(37)]
     );
     buffer.move_down(1, false);
     assert_eq!(
-        buffer.selections_iter().collect::<Vec<Selection>>(),
+        buffer
+            .internal_selections_iter()
+            .collect::<Vec<Selection>>(),
         vec![Selection::new_quick(6, 37, 6, 37, CursorDirection::Forward)]
     );
     buffer.move_down(1, false);

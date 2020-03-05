@@ -12,8 +12,8 @@ use termion::raw::IntoRawMode;
 // as directly as characters doesn't handle CR
 
 fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
-    //let line_length = b.get_rope().line_length(p.line.get()).unwrap();
-    b.get_rope().line_to_char(p.line.get() - 1) + p.col.get() - 1
+    //let line_length = b.get_rope().line_length(p.line).unwrap();
+    b.get_rope().line_to_char(p.line - 1) + p.col - 1
 }
 
 fn main() {
@@ -72,8 +72,8 @@ fn main() {
         }
 
         for s in buffer.selections_iter() {
-            let from_ch = position_to_char_idx(&buffer, s.head);
-            let to_ch = position_to_char_idx(&buffer, s.tail);
+            let from_ch = position_to_char_idx(&buffer, s.from);
+            let to_ch = position_to_char_idx(&buffer, s.to);
             write!(
                 stdout,
                 "{} {} {}",
@@ -82,9 +82,13 @@ fn main() {
                 to_ch
             )
             .unwrap();
-            let mut first_char = buffer.get_rope().char(from_ch);
-            if buffer.get_rope().line_length(s.head.line.get()).unwrap() == s.head.col.get() {
-                first_char = ' ';
+            let mut first_char = buffer
+                .get_rope()
+                .char(from_ch)
+                .to_string()
+                .replace("\n", " \n\r");
+            if buffer.get_rope().line_length(s.from.line).unwrap() == s.from.col {
+                first_char = " ".to_string();
             }
 
             // Highlight cursor if selection is reversed
@@ -97,22 +101,30 @@ fn main() {
                 stdout,
                 "{}{}",
                 termion::cursor::Goto(
-                    s.head.col.get().try_into().unwrap(),
-                    s.head.line.get().try_into().unwrap(),
+                    s.from.col.try_into().unwrap(),
+                    s.from.line.try_into().unwrap(),
                 ),
                 first_char
             )
             .unwrap();
             if from_ch != to_ch {
-                let substr = buffer.get_rope().slice(from_ch + 1..to_ch);
-                let last_char = buffer.get_rope().char(to_ch);
+                let substr = buffer
+                    .get_rope()
+                    .slice(from_ch + 1..to_ch)
+                    .to_string()
+                    .replace("\n", "\n\r");
+                let last_char = buffer
+                    .get_rope()
+                    .char(to_ch)
+                    .to_string()
+                    .replace("\n", " \n\r");
                 // Draw other selection's data
                 write!(
                     stdout,
                     "{}{}{}",
                     termion::cursor::Goto(
-                        TryInto::<u16>::try_into(s.head.col.get()).unwrap() + 1u16,
-                        TryInto::<u16>::try_into(s.head.line.get()).unwrap(),
+                        TryInto::<u16>::try_into(s.from.col).unwrap() + 1u16,
+                        TryInto::<u16>::try_into(s.from.line).unwrap(),
                     ),
                     color::Bg(color::Blue),
                     substr
@@ -129,8 +141,8 @@ fn main() {
                     stdout,
                     "{}{}",
                     termion::cursor::Goto(
-                        s.tail.col.get().try_into().unwrap(),
-                        s.tail.line.get().try_into().unwrap(),
+                        s.to.col.try_into().unwrap(),
+                        s.to.line.try_into().unwrap(),
                     ),
                     last_char
                 )
