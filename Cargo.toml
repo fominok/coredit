@@ -19,3 +19,8 @@ itertools = "0.8"
 pretty_assertions = "0.6.1"
 termion = "1.5"
 better-panic = "0.2.0"
+
+[dev-dependencies.cursive]
+version = "0.14"
+default-features = false
+features = ["crossterm-backend"]

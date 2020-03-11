@@ -5,6 +5,7 @@ mod selections;
 mod util;
 pub use buffer::Buffer;
 pub use selections::CursorDirection;
+pub use selections::Position;
 use snafu::Snafu;
 use std::io;
 
@@ -42,22 +43,22 @@ pub trait LineLength {
 // The next one is aimed to hide `PositiveUsize` from API
 
 /// Coordinates in a buffer
-#[derive(Clone, Copy)]
-pub struct Position {
-    /// One-indexed line
-    pub line: usize,
-    /// One-indexed column
-    pub col: usize,
-}
-
-impl From<selections::Position> for Position {
-    fn from(p: selections::Position) -> Self {
-        Position {
-            line: p.line.get(),
-            col: p.col.get(),
-        }
-    }
-}
+// #[derive(Clone, Copy)]
+// pub struct Position {
+//     /// One-indexed line
+//     pub line: usize,
+//     /// One-indexed column
+//     pub col: usize,
+// }
+//
+// impl From<selections::Position> for Position {
+//     fn from(p: selections::Position) -> Self {
+//         Position {
+//             line: p.line.get(),
+//             col: p.col.get(),
+//         }
+//     }
+// }
 
 /// A text selection
 pub struct Selection {

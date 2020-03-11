@@ -245,3 +245,39 @@ fn test_move_right_drop_selection_reversed() {
         Selection::new_quick(7, 10, 7, 10, CursorDirection::Forward),
     );
 }
+
+#[test]
+fn test_position_successor() {
+    let mut line_length = HashMap::new();
+    line_length.insert(2, 10);
+    let pos = Position {
+        line: 2.into(),
+        col: 9.into(),
+    };
+    let nl_pos = pos.successor(&line_length).successor(&line_length);
+    assert_eq!(
+        nl_pos,
+        Position {
+            line: 3.into(),
+            col: 1.into(),
+        },
+    );
+}
+
+#[test]
+fn test_position_predecessor() {
+    let mut line_length = HashMap::new();
+    line_length.insert(2, 10);
+    let pos = Position {
+        line: 3.into(),
+        col: 2.into(),
+    };
+    let nl_pos = pos.predecessor(&line_length).predecessor(&line_length);
+    assert_eq!(
+        nl_pos,
+        Position {
+            line: 2.into(),
+            col: 10.into(),
+        },
+    );
+}

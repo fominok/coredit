@@ -10,9 +10,49 @@ mod tests;
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
 pub struct Position {
     /// One-indexed line
-    pub(crate) line: PositiveUsize,
+    pub line: PositiveUsize,
     /// One-indexed column
-    pub(crate) col: PositiveUsize,
+    pub col: PositiveUsize,
+}
+
+impl Position {
+    /// Return a position which follows the callee
+    pub fn successor<L: LineLength>(&self, line_length: L) -> Self {
+        if line_length
+            .line_length(self.line.get())
+            .map(|x| self.col.get() >= x)
+            .unwrap_or(false)
+        {
+            Position {
+                col: 1.into(),
+                line: self.line + 1.into(),
+            }
+        } else {
+            Position {
+                col: self.col + 1.into(),
+                line: self.line,
+            }
+        }
+    }
+
+    /// Return a position which is before the callee
+    pub fn predecessor<L: LineLength>(&self, line_length: L) -> Self {
+        if self.col.get() == 1 {
+            if let Some(length) = line_length.line_length(self.line.get() - 1) {
+                Position {
+                    line: self.line - 1.into(),
+                    col: length.into(),
+                }
+            } else {
+                self.clone()
+            }
+        } else {
+            Position {
+                col: self.col - 1.into(),
+                line: self.line,
+            }
+        }
+    }
 }
 
 /// For selection the head must be less than the tail, but
