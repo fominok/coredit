@@ -95,6 +95,7 @@ fn split_intervals_by_lines(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<Co
                     },
                     int.2,
                 ));
+                i += 1;
             }
 
             // Put the last possibly non-full line
@@ -152,75 +153,29 @@ enum IntervalColor {
 // `View` contains many methods, but only a few are required.
 impl View for KeyCodeView {
     fn draw(&self, printer: &Printer) {
-        let mut colored_intervals = vec![];
-        let mut selections_colors = self
+        let mut selections_colors: Vec<ColoredInterval> = self
             .buffer
             .selections_iter()
             .map(|s| selection_to_colored_interval_pair(&self.buffer, s))
-            .flatten();
-        let first = selections_colors.next().unwrap();
-        let mut last_pos = first.1;
-        if first.0
-            == (Position {
-                col: 1.into(),
-                line: 1.into(),
-            })
-        {
-            colored_intervals.push(first);
-        } else {
-            colored_intervals.push((
-                Position {
-                    line: 1.into(),
-                    col: 1.into(),
-                },
-                first.0.predecessor(self.buffer.get_rope()),
-                IntervalColor::Uncolored,
-            ));
-            colored_intervals.push(first);
-        }
-        for s in selections_colors {
-            if s.0 > last_pos.successor(self.buffer.get_rope()) {
-                colored_intervals.push((
-                    last_pos.successor(self.buffer.get_rope()),
-                    s.0.predecessor(self.buffer.get_rope()),
-                    IntervalColor::Uncolored,
-                ));
-            }
-            last_pos = s.1;
-            colored_intervals.push(s);
-        }
+            .flatten()
+            .collect();
+        selections_colors = fill_missing_intervals(&self.buffer, &selections_colors);
+        selections_colors = split_intervals_by_lines(&self.buffer, &selections_colors);
 
-        if self.buffer.get_rope().len_chars() > position_to_char_idx(&self.buffer, last_pos) {
-            colored_intervals.push((
-                last_pos.successor(self.buffer.get_rope()),
-                Position {
-                    col: 228.into(),
-                    line: 228.into(),
-                },
-                IntervalColor::Uncolored,
-            ));
-        }
-
-        // for (i, line) in self.buffer.get_rope().lines_at(0).enumerate() {
-        //     printer.print((0, i), &line.to_string());
-        // }
-        for (from, to, color) in colored_intervals.into_iter() {
-            let slices = &self
+        for (from, to, color) in selections_colors.into_iter() {
+            let ends_on_nl = to.is_line_end(self.buffer.get_rope());
+            let mut slice: String = self
                 .buffer
                 .get_rope()
                 .slice(
                     position_to_char_idx(&self.buffer, from)
-                        ..=position_to_char_idx(&self.buffer, to),
+                        ..=position_to_char_idx(&self.buffer, to) - if ends_on_nl { 1 } else { 0 },
                 )
                 .to_string();
-            let mut slices_split = slices.split("\n");
-            printer.print(
-                (from.col.get() - 1, from.line.get() - 1),
-                slices_split.next().unwrap(),
-            );
-            for (offset, slice) in slices_split.enumerate() {
-                printer.print((0, from.line.get() - 1 + offset), slice);
+            if ends_on_nl {
+                slice.push(' ');
             }
+            printer.print((from.col.get() - 1, from.line.get() - 1), &slice);
         }
     }
 

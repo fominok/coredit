@@ -18,11 +18,7 @@ pub struct Position {
 impl Position {
     /// Return a position which follows the callee
     pub fn successor<L: LineLength>(&self, line_length: L) -> Self {
-        if line_length
-            .line_length(self.line.get())
-            .map(|x| self.col.get() >= x)
-            .unwrap_or(false)
-        {
+        if self.is_line_end(line_length) {
             Position {
                 col: 1.into(),
                 line: self.line + 1.into(),
@@ -52,6 +48,14 @@ impl Position {
                 line: self.line,
             }
         }
+    }
+
+    /// Check if is line end (semantically points at newline)
+    pub fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
+        line_length
+            .line_length(self.line.get())
+            .map(|x| self.col.get() >= x)
+            .unwrap_or(false)
     }
 }
 
