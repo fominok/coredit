@@ -1,11 +1,19 @@
 use coredit::{Buffer, CursorDirection, LineLength, Position, Selection};
 use cursive::event::{Event, EventResult};
+use cursive::theme;
 use cursive::traits::*;
 use cursive::{Cursive, Printer};
 use std::fs::File;
 
 // This example define a custom view that prints any event it receives.
 // This is a handy way to check the input received by cursive.
+
+fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
+    theme::ColorStyle {
+        front: theme::ColorType::Color(theme::Color::RgbLowRes(f.0, f.1, f.2)),
+        back: theme::ColorType::Color(theme::Color::RgbLowRes(b.0, b.1, b.2)),
+    }
+}
 
 fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
     ////let line_length = b.get_rope().line_length(p.line).unwrap();
@@ -54,8 +62,8 @@ fn fill_missing_intervals(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<Colo
                 int.0.predecessor(rope),
                 IntervalColor::Uncolored,
             ));
-            previous_pos = int.1.successor(rope);
         }
+        previous_pos = int.1.successor(rope);
         result.push(*int);
     }
 
@@ -142,7 +150,7 @@ impl KeyCodeView {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum IntervalColor {
     Uncolored,
     Selection,
@@ -175,7 +183,16 @@ impl View for KeyCodeView {
             if ends_on_nl {
                 slice.push(' ');
             }
-            printer.print((from.col.get() - 1, from.line.get() - 1), &slice);
+            printer.with_color(
+                match color {
+                    IntervalColor::Uncolored => make_style((0, 0, 0), (5, 5, 5)),
+                    IntervalColor::Selection => make_style((5, 5, 5), (0, 0, 5)),
+                    IntervalColor::Cursor => make_style((5, 5, 5), (0, 0, 0)),
+                },
+                |printer| {
+                    printer.print((from.col.get() - 1, from.line.get() - 1), &slice);
+                },
+            );
         }
     }
 
