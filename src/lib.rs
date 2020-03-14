@@ -5,7 +5,7 @@ mod selections;
 mod util;
 pub use buffer::Buffer;
 pub use selections::CursorDirection;
-pub use selections::Position;
+pub use selections::{Position, Selection};
 use snafu::Snafu;
 use std::io;
 
@@ -61,24 +61,24 @@ pub trait LineLength {
 // }
 
 /// A text selection
-pub struct Selection {
-    /// Position where the selection starts
-    pub from: Position,
-    /// Position where the selection ends
-    pub to: Position,
-    /// As `from` <= `to` is always true, the direction is specified with this field
-    pub cursor_direction: CursorDirection,
-}
-
-impl From<selections::Selection> for Selection {
-    fn from(s: selections::Selection) -> Self {
-        Selection {
-            from: s.from.into(),
-            to: s.to.into(),
-            cursor_direction: s.cursor_direction,
-        }
-    }
-}
+// pub struct Selection {
+//     /// Position where the selection starts
+//     pub from: Position,
+//     /// Position where the selection ends
+//     pub to: Position,
+//     /// As `from` <= `to` is always true, the direction is specified with this field
+//     pub cursor_direction: CursorDirection,
+// }
+//
+// impl From<selections::Selection> for Selection {
+//     fn from(s: selections::Selection) -> Self {
+//         Selection {
+//             from: s.from.into(),
+//             to: s.to.into(),
+//             cursor_direction: s.cursor_direction,
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,5 @@
 use coredit::{Buffer, CursorDirection, LineLength, Position, Selection};
-use cursive::event::{Event, EventResult};
+use cursive::event::{self, Event, EventResult};
 use cursive::theme;
 use cursive::traits::*;
 use cursive::{Cursive, Printer};
@@ -23,23 +23,27 @@ fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
 type ColoredInterval = (Position, Position, IntervalColor);
 
 fn selection_to_colored_interval_pair(b: &Buffer, s: Selection) -> Vec<ColoredInterval> {
-    match s.cursor_direction {
-        CursorDirection::Forward => vec![
-            (
-                s.from,
-                s.to.predecessor(b.get_rope()),
-                IntervalColor::Selection,
-            ),
-            (s.to, s.to, IntervalColor::Cursor),
-        ],
-        CursorDirection::Backward => vec![
-            (s.from, s.from, IntervalColor::Cursor),
-            (
-                s.from.successor(b.get_rope()),
-                s.to,
-                IntervalColor::Selection,
-            ),
-        ],
+    if s.is_point() {
+        vec![(s.to, s.to, IntervalColor::Cursor)]
+    } else {
+        match s.cursor_direction {
+            CursorDirection::Forward => vec![
+                (
+                    s.from,
+                    s.to.predecessor(b.get_rope()),
+                    IntervalColor::Selection,
+                ),
+                (s.to, s.to, IntervalColor::Cursor),
+            ],
+            CursorDirection::Backward => vec![
+                (s.from, s.from, IntervalColor::Cursor),
+                (
+                    s.from.successor(b.get_rope()),
+                    s.to,
+                    IntervalColor::Selection,
+                ),
+            ],
+        }
     }
 }
 
@@ -196,7 +200,17 @@ impl View for KeyCodeView {
         }
     }
 
-    fn on_event(&mut self, event: Event) -> EventResult {
+    fn on_event(&mut self, e: Event) -> EventResult {
+        match e {
+            Event::Key(k) => match k {
+                event::Key::Left => self.buffer.move_left(1, false),
+                event::Key::Right => self.buffer.move_right(1, false),
+                event::Key::Up => self.buffer.move_up(1, false),
+                event::Key::Down => self.buffer.move_down(1, false),
+                _ => {}
+            },
+            _ => {}
+        }
         EventResult::Consumed(None)
     }
 }

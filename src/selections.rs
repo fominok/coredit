@@ -106,7 +106,7 @@ pub struct Selection {
 
 impl Selection {
     /// Check if the selection's length equals to 1.
-    pub(crate) fn is_point(&self) -> bool {
+    pub fn is_point(&self) -> bool {
         self.from == self.to
     }
 
