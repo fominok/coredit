@@ -16,37 +16,45 @@ pub struct Position {
 }
 
 impl Position {
-    /// Return a position which follows the callee
-    pub fn successor<L: LineLength>(&self, line_length: L) -> Self {
+    /// Return a position which follows the callee.
+    /// Returns `None` if called for the last possible position in
+    /// buffer.
+    pub fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
+        let lines_count = line_length.count();
         if self.is_line_end(line_length) {
-            Position {
-                col: 1.into(),
-                line: self.line + 1.into(),
+            if lines_count == self.line.get() {
+                None
+            } else {
+                Some(Position {
+                    col: 1.into(),
+                    line: self.line + 1.into(),
+                })
             }
         } else {
-            Position {
+            Some(Position {
                 col: self.col + 1.into(),
                 line: self.line,
-            }
+            })
         }
     }
 
     /// Return a position which is before the callee
-    pub fn predecessor<L: LineLength>(&self, line_length: L) -> Self {
+    /// Returns `None` if called for the beginning of buffer.
+    pub fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
             if let Some(length) = line_length.line_length(self.line.get() - 1) {
-                Position {
+                Some(Position {
                     line: self.line - 1.into(),
                     col: length.into(),
-                }
+                })
             } else {
-                self.clone()
+                None
             }
         } else {
-            Position {
+            Some(Position {
                 col: self.col - 1.into(),
                 line: self.line,
-            }
+            })
         }
     }
 

@@ -30,7 +30,7 @@ fn selection_to_colored_interval_pair(b: &Buffer, s: Selection) -> Vec<ColoredIn
             CursorDirection::Forward => vec![
                 (
                     s.from,
-                    s.to.predecessor(b.get_rope()),
+                    s.to.predecessor(b.get_rope()).unwrap(),
                     IntervalColor::Selection,
                 ),
                 (s.to, s.to, IntervalColor::Cursor),
@@ -38,7 +38,7 @@ fn selection_to_colored_interval_pair(b: &Buffer, s: Selection) -> Vec<ColoredIn
             CursorDirection::Backward => vec![
                 (s.from, s.from, IntervalColor::Cursor),
                 (
-                    s.from.successor(b.get_rope()),
+                    s.from.successor(b.get_rope()).unwrap(),
                     s.to,
                     IntervalColor::Selection,
                 ),
@@ -53,27 +53,31 @@ fn fill_missing_intervals(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<Colo
         line: rope.count().into(),
         col: rope.line_length(rope.count()).unwrap().into(),
     };
-    let mut previous_pos = Position {
+    let mut previous_pos = Some(Position {
         line: 1.into(),
         col: 1.into(),
-    };
+    });
     let mut result = vec![];
 
     for int in intervals.iter() {
-        if int.0 > previous_pos {
-            result.push((
-                previous_pos,
-                int.0.predecessor(rope),
-                IntervalColor::Uncolored,
-            ));
+        if let Some(pos) = previous_pos {
+            if int.0 > pos {
+                result.push((
+                    pos,
+                    int.0.predecessor(rope).unwrap(),
+                    IntervalColor::Uncolored,
+                ));
+            }
+            previous_pos = int.1.successor(rope);
+            result.push(*int);
+        } else {
+            break;
         }
-        previous_pos = int.1.successor(rope);
-        result.push(*int);
     }
 
     // Finish with the last inverval
-    if previous_pos < last_pos {
-        result.push((previous_pos, last_pos, IntervalColor::Uncolored));
+    if let Some(pos) = previous_pos {
+        result.push((pos, last_pos, IntervalColor::Uncolored));
     }
     result
 }
