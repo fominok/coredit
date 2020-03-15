@@ -72,7 +72,9 @@ fn fill_missing_intervals(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<Colo
     }
 
     // Finish with the last inverval
-    result.push((previous_pos, last_pos, IntervalColor::Uncolored));
+    if previous_pos < last_pos {
+        result.push((previous_pos, last_pos, IntervalColor::Uncolored));
+    }
     result
 }
 
@@ -207,6 +209,13 @@ impl View for KeyCodeView {
                 event::Key::Right => self.buffer.move_right(1, false),
                 event::Key::Up => self.buffer.move_up(1, false),
                 event::Key::Down => self.buffer.move_down(1, false),
+                _ => {}
+            },
+            Event::Shift(k) => match k {
+                event::Key::Left => self.buffer.move_left(1, true),
+                event::Key::Right => self.buffer.move_right(1, true),
+                event::Key::Up => self.buffer.move_up(1, true),
+                event::Key::Down => self.buffer.move_down(1, true),
                 _ => {}
             },
             _ => {}
