@@ -250,11 +250,16 @@ fn test_move_right_drop_selection_reversed() {
 fn test_position_successor() {
     let mut line_length = HashMap::new();
     line_length.insert(2, 10);
+    line_length.insert(3, 10);
     let pos = Position {
         line: 2.into(),
         col: 9.into(),
     };
-    let nl_pos = pos.successor(&line_length).successor(&line_length);
+    let nl_pos = pos
+        .successor(&line_length)
+        .unwrap()
+        .successor(&line_length)
+        .unwrap();
     assert_eq!(
         nl_pos,
         Position {
@@ -272,7 +277,11 @@ fn test_position_predecessor() {
         line: 3.into(),
         col: 2.into(),
     };
-    let nl_pos = pos.predecessor(&line_length).predecessor(&line_length);
+    let nl_pos = pos
+        .predecessor(&line_length)
+        .unwrap()
+        .predecessor(&line_length)
+        .unwrap();
     assert_eq!(
         nl_pos,
         Position {

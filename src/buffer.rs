@@ -118,6 +118,12 @@ impl Buffer {
         self.selection_storage.move_right(n, extend, &self.rope);
     }
 
+    /// Place a new selection under each existing one with the same columns if it will fit the line.
+    /// If the next line is too short to put a selection then it will use matching subsequent line.
+    pub fn place_selection_under<L: LineLength>(&mut self) {
+        self.selection_storage.place_selection_under(&self.rope);
+    }
+
     /// Insert `text` on all cursors.
     ///
     /// If selection's cursor is in front, then the selection will be moved

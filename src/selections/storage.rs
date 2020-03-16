@@ -213,6 +213,10 @@ impl SelectionStorage {
         }
     }
 
+    /// Place a new selection under each existing one with the same columns if it will fit the line.
+    /// If the next line is too short to put a selection then it will use matching subsequent line.
+    pub(crate) fn place_selection_under<L: LineLength>(&mut self, line_length: L) {}
+
     /// Find a selection that overlaps with the input selection and replace it.
     /// Used to shrink the selection to be cursor-sized.
     pub(crate) fn replace_selection(&mut self, to: Selection) {
