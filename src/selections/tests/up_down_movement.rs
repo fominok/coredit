@@ -215,17 +215,18 @@ fn test_move_down_preserve_column_drop_selection_once() {
 }
 
 #[test]
-fn test_create_under() {
+fn test_create_under_multi_line() {
     let mut line_length = HashMap::new();
-    line_length.insert(2, 50);
-    line_length.insert(3, 20);
+    line_length.insert(1, 50);
+    line_length.insert(2, 20);
+    line_length.insert(3, 30);
     line_length.insert(4, 30);
     line_length.insert(5, 50);
     line_length.insert(6, 50);
     line_length.insert(7, 50);
     line_length.insert(8, 50);
     line_length.insert(9, 50);
-    let mut selection = Selection::new_quick(2, 40, 4, 10, CursorDirection::Forward);
+    let selection = Selection::new_quick(1, 40, 3, 10, CursorDirection::Forward);
 
     // On the first move it should be the end of line if it is shorter
 
@@ -233,5 +234,27 @@ fn test_create_under() {
     assert_eq!(
         new_selection,
         Selection::new_quick(5, 40, 7, 10, CursorDirection::Forward),
+    );
+}
+
+#[test]
+fn test_create_under_single_line() {
+    let mut line_length = HashMap::new();
+    line_length.insert(2, 50);
+    line_length.insert(3, 20);
+    line_length.insert(4, 30);
+
+    let selection = Selection::new_quick(2, 10, 2, 20, CursorDirection::Backward);
+    let new_selection = selection.create_selection_under(&line_length).unwrap();
+    assert_eq!(
+        new_selection,
+        Selection::new_quick(3, 10, 3, 20, CursorDirection::Backward),
+    );
+
+    let selection = Selection::new_quick(2, 10, 2, 29, CursorDirection::Backward);
+    let new_selection = selection.create_selection_under(&line_length).unwrap();
+    assert_eq!(
+        new_selection,
+        Selection::new_quick(4, 10, 4, 29, CursorDirection::Backward),
     );
 }
