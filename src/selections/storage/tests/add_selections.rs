@@ -4,6 +4,7 @@ use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 
 #[test]
+#[ignore]
 fn test_place_selections_under() {
     let mut line_length = HashMap::new();
     line_length.insert(4, 83);

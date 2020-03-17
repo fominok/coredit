@@ -332,6 +332,31 @@ impl Selection {
         }
     }
 
+    pub(crate) fn create_selection_under<L: LineLength>(&mut self, line_length: L) -> Option<Self> {
+        // Pick a line with enough length for tail
+        let width = self.to.line.get() - self.from.line.get();
+        let mut line_idx = self.to.line.get() + width + 1;
+        while let Some(length_to) = line_length.line_length(line_idx) {
+            if let Some(length_from) = line_length.line_length(line_idx - width) {
+                return Some(Selection {
+                    from: Position {
+                        line: (line_idx - width).into(),
+                        col: self.from.col,
+                    },
+                    to: Position {
+                        line: line_idx.into(),
+                        col: self.to.col,
+                    },
+                    cursor_direction: self.cursor_direction,
+                    sticky_column: None,
+                });
+            } else {
+                line_idx += 1;
+            }
+        }
+        None
+    }
+
     // Helper methods related to testing:
 
     /// A shortcut to create Position instances in place.

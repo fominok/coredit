@@ -213,3 +213,25 @@ fn test_move_down_preserve_column_drop_selection_once() {
         Selection::new_quick(3, 20, 5, 40, CursorDirection::Forward),
     );
 }
+
+#[test]
+fn test_create_under() {
+    let mut line_length = HashMap::new();
+    line_length.insert(2, 50);
+    line_length.insert(3, 20);
+    line_length.insert(4, 30);
+    line_length.insert(5, 50);
+    line_length.insert(6, 50);
+    line_length.insert(7, 50);
+    line_length.insert(8, 50);
+    line_length.insert(9, 50);
+    let mut selection = Selection::new_quick(2, 40, 4, 10, CursorDirection::Forward);
+
+    // On the first move it should be the end of line if it is shorter
+
+    let new_selection = selection.create_selection_under(&line_length).unwrap();
+    assert_eq!(
+        new_selection,
+        Selection::new_quick(5, 40, 7, 10, CursorDirection::Forward),
+    );
+}
