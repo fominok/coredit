@@ -215,7 +215,15 @@ impl SelectionStorage {
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
-    pub(crate) fn place_selection_under<L: LineLength>(&mut self, line_length: L) {}
+    pub(crate) fn place_selection_under<L: LineLength + Clone>(&mut self, line_length: L) {
+        let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        for s in selections_old.into_iter().map(|x| x.0) {
+            if let Some(selection_under) = s.create_selection_under(line_length.clone()) {
+                self.add_selection(selection_under);
+            }
+            self.add_selection(s);
+        }
+    }
 
     /// Find a selection that overlaps with the input selection and replace it.
     /// Used to shrink the selection to be cursor-sized.

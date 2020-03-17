@@ -120,7 +120,7 @@ impl Buffer {
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
-    pub fn place_selection_under<L: LineLength>(&mut self) {
+    pub fn place_selection_under(&mut self) {
         self.selection_storage.place_selection_under(&self.rope);
     }
 

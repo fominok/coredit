@@ -222,6 +222,10 @@ impl View for KeyCodeView {
                 event::Key::Down => self.buffer.move_down(1, true),
                 _ => {}
             },
+            Event::AltChar(c) => match c {
+                'c' => self.buffer.place_selection_under(),
+                _ => {}
+            },
             _ => {}
         }
         EventResult::Consumed(None)
