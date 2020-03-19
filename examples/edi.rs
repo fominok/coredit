@@ -213,6 +213,11 @@ impl View for KeyCodeView {
                 event::Key::Right => self.buffer.move_right(1, false),
                 event::Key::Up => self.buffer.move_up(1, false),
                 event::Key::Down => self.buffer.move_down(1, false),
+                event::Key::Del => self.buffer.delete(),
+                event::Key::Backspace => {
+                    self.buffer.delete();
+                    self.buffer.move_left(1, false);
+                }
                 _ => {}
             },
             Event::Shift(k) => match k {
@@ -226,6 +231,7 @@ impl View for KeyCodeView {
                 'c' => self.buffer.place_selection_under(),
                 _ => {}
             },
+            Event::Char(c) => self.buffer.insert(&c.to_string()),
             _ => {}
         }
         EventResult::Consumed(None)
