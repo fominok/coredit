@@ -5,7 +5,7 @@ use std::ops::Sub;
 /// A helper wrapper that guarantees underlying `usize` is greater than 0.
 /// If by creation or subtraction opposite happens, it will be equal to 1.
 #[derive(Add, Display, Into, Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
-pub struct PositiveUsize(usize);
+pub(crate) struct PositiveUsize(usize);
 
 impl Default for PositiveUsize {
     fn default() -> Self {

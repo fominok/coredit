@@ -1,4 +1,4 @@
-use coredit::{Buffer, CursorDirection, LineLength, Position, Selection};
+use coredit::{BindedPosition, BindedSelection, Buffer, CursorDirection};
 use cursive::event::{self, Event, EventResult};
 use cursive::theme;
 use cursive::traits::*;
@@ -15,60 +15,47 @@ fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
     }
 }
 
-fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
+fn position_to_char_idx(b: &Buffer, p: BindedPosition) -> usize {
     ////let line_length = b.get_rope().line_length(p.line).unwrap();
-    b.get_rope().line_to_char(p.line.get() - 1) + p.col.get() - 1
+    b.get_rope().line_to_char(p.line() - 1) + p.col() - 1
 }
 
-type ColoredInterval = (Position, Position, IntervalColor);
+type ColoredInterval<'a> = (BindedPosition<'a>, BindedPosition<'a>, IntervalColor);
 
-fn selection_to_colored_interval_pair(b: &Buffer, s: Selection) -> Vec<ColoredInterval> {
-    if s.is_point() {
-        vec![(s.to, s.to, IntervalColor::Cursor)]
+fn selection_to_colored_interval_pair<'a>(s: BindedSelection<'a>) -> Vec<ColoredInterval<'a>> {
+    let is_point = s.is_point();
+    let cursor_direction = s.cursor_direction();
+    let (from, to) = s.coords();
+    if is_point {
+        vec![(to, to, IntervalColor::Cursor)]
     } else {
-        match s.cursor_direction {
+        match cursor_direction {
             CursorDirection::Forward => vec![
-                (
-                    s.from,
-                    s.to.predecessor(b.get_rope()).unwrap(),
-                    IntervalColor::Selection,
-                ),
-                (s.to, s.to, IntervalColor::Cursor),
+                (from, to.predecessor().unwrap(), IntervalColor::Selection),
+                (to, to, IntervalColor::Cursor),
             ],
             CursorDirection::Backward => vec![
-                (s.from, s.from, IntervalColor::Cursor),
-                (
-                    s.from.successor(b.get_rope()).unwrap(),
-                    s.to,
-                    IntervalColor::Selection,
-                ),
+                (from, from, IntervalColor::Cursor),
+                (from.successor().unwrap(), to, IntervalColor::Selection),
             ],
         }
     }
 }
 
-fn fill_missing_intervals(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<ColoredInterval> {
-    let rope = b.get_rope();
-    let last_pos = Position {
-        line: rope.count().into(),
-        col: rope.line_length(rope.count()).unwrap().into(),
-    };
-    let mut previous_pos = Some(Position {
-        line: 1.into(),
-        col: 1.into(),
-    });
+fn fill_missing_intervals<'a>(
+    b: &'a Buffer,
+    intervals: Vec<ColoredInterval<'a>>,
+) -> Vec<ColoredInterval<'a>> {
+    let last_pos = b.create_position(b.lines_count(), b.line_length(b.lines_count()).unwrap());
+    let mut previous_pos = Some(b.create_position(1, 1));
     let mut result = vec![];
 
     for int in intervals.iter() {
         if let Some(pos) = previous_pos {
             if int.0 > pos {
-                result.push((
-                    pos,
-                    int.0.predecessor(rope).unwrap(),
-                    IntervalColor::Uncolored,
-                ));
+                result.push((pos, int.0.predecessor().unwrap(), IntervalColor::Uncolored));
             }
-            previous_pos = int.1.successor(rope);
+            previous_pos = int.1.successor();
             result.push(*int);
         } else {
             break;
@@ -82,49 +69,35 @@ fn fill_missing_intervals(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<Colo
     result
 }
 
-fn split_intervals_by_lines(b: &Buffer, intervals: &[ColoredInterval]) -> Vec<ColoredInterval> {
-    let rope = b.get_rope();
+fn split_intervals_by_lines<'a>(
+    b: &'a Buffer,
+    intervals: Vec<ColoredInterval<'a>>,
+) -> Vec<ColoredInterval<'a>> {
     let mut result = vec![];
     for int in intervals.iter() {
-        if int.0.line == int.1.line {
+        if int.0.line() == int.1.line() {
             result.push(*int);
         } else {
             // Put first possibly non-full line
             result.push((
                 int.0,
-                Position {
-                    line: int.0.line,
-                    col: rope.line_length(int.0.line.get()).unwrap().into(),
-                },
+                b.create_position(int.0.line(), b.line_length(int.0.line()).unwrap()),
                 int.2,
             ));
 
             // Put multiple fill lines in between
-            let mut i = int.0.line.get() + 1;
-            while i < int.1.line.get() {
+            let mut i = int.0.line() + 1;
+            while i < int.1.line() {
                 result.push((
-                    Position {
-                        line: i.into(),
-                        col: 1.into(),
-                    },
-                    Position {
-                        line: i.into(),
-                        col: rope.line_length(i).unwrap().into(),
-                    },
+                    b.create_position(i, 1),
+                    b.create_position(i, b.line_length(i).unwrap()),
                     int.2,
                 ));
                 i += 1;
             }
 
             // Put the last possibly non-full line
-            result.push((
-                Position {
-                    line: int.1.line,
-                    col: 1.into(),
-                },
-                int.1,
-                int.2,
-            ));
+            result.push((b.create_position(int.1.line(), 1), int.1, int.2));
         }
     }
     result
@@ -174,14 +147,14 @@ impl View for KeyCodeView {
         let mut selections_colors: Vec<ColoredInterval> = self
             .buffer
             .selections_iter()
-            .map(|s| selection_to_colored_interval_pair(&self.buffer, s))
+            .map(|s| selection_to_colored_interval_pair(s))
             .flatten()
             .collect();
-        selections_colors = fill_missing_intervals(&self.buffer, &selections_colors);
-        selections_colors = split_intervals_by_lines(&self.buffer, &selections_colors);
+        selections_colors = fill_missing_intervals(&self.buffer, selections_colors);
+        selections_colors = split_intervals_by_lines(&self.buffer, selections_colors);
 
         for (from, to, color) in selections_colors.into_iter() {
-            let ends_on_nl = to.is_line_end(self.buffer.get_rope());
+            let ends_on_nl = to.is_line_end();
             let mut slice: String = self
                 .buffer
                 .get_rope()
@@ -200,7 +173,7 @@ impl View for KeyCodeView {
                     IntervalColor::Cursor => make_style((5, 5, 5), (0, 0, 0)),
                 },
                 |printer| {
-                    printer.print((from.col.get() - 1, from.line.get() - 1), &slice);
+                    printer.print((from.col() - 1, from.line() - 1), &slice);
                 },
             );
         }

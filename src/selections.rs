@@ -8,19 +8,19 @@ mod tests;
 /// A position in a text buffer represented by 1-based numbered
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
-pub struct Position {
+pub(crate) struct Position {
     /// One-indexed line
-    pub line: PositiveUsize,
+    pub(crate) line: PositiveUsize,
     /// One-indexed column
-    pub col: PositiveUsize,
+    pub(crate) col: PositiveUsize,
 }
 
 impl Position {
     /// Return a position which follows the callee.
     /// Returns `None` if called for the last possible position in
     /// buffer.
-    pub fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
-        let lines_count = line_length.count();
+    pub(crate) fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
+        let lines_count = line_length.lines_count();
         if self.is_line_end(line_length) {
             if lines_count == self.line.get() {
                 None
@@ -40,7 +40,7 @@ impl Position {
 
     /// Return a position which is before the callee
     /// Returns `None` if called for the beginning of buffer.
-    pub fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
+    pub(crate) fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
             if let Some(length) = line_length.line_length(self.line.get() - 1) {
                 Some(Position {
@@ -59,7 +59,7 @@ impl Position {
     }
 
     /// Check if is line end (semantically points at newline)
-    pub fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
+    pub(crate) fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
         line_length
             .line_length(self.line.get())
             .map(|x| self.col.get() >= x)
@@ -95,21 +95,21 @@ impl CursorDirection {
 
 /// Selection is as pair of positions, which are pairs of line/column values.
 #[derive(Default, Debug, PartialEq, Clone)]
-pub struct Selection {
+pub(crate) struct Selection {
     /// One of the selection's ends nearest to the buffer's beginning
-    pub from: Position,
+    pub(crate) from: Position,
     /// One of the selection's ends nearest to the buffer's end
-    pub to: Position,
+    pub(crate) to: Position,
     /// One of the selection's ends is marked as a "cursor", if it's on the right,
     /// then selection's cursor direction is `Forward`.
-    pub cursor_direction: CursorDirection,
+    pub(crate) cursor_direction: CursorDirection,
     /// If after up/down movement the selection happened to get onto a line which is
     /// shorter than the previous one, then it will be placed in the line's and
     /// remembering its previous column as a "sticky column". If a subsequent
     /// up/down movement leads to a line longer than this value the sticky column
     /// will restore the selection's original column. Left/right movements will
     /// reset `sticky_column`.
-    sticky_column: Option<PositiveUsize>,
+    pub(crate) sticky_column: Option<PositiveUsize>,
 }
 
 impl Selection {
@@ -304,7 +304,7 @@ impl Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = cursor.line.get() + n;
-        let lines_count = line_length.count();
+        let lines_count = line_length.lines_count();
         if target > lines_count {
             cursor.line = lines_count.into();
         } else {

@@ -60,11 +60,16 @@ impl Buffer {
         })
     }
 
-    // /// Return Ropey's `Lines` iterator from line numbered `from_line`.
-    // /// Note that first line has index 1.
-    // pub fn lines_at(&self, from_line: usize) -> ropey::iter::Lines {
-    //     self.rope.lines_at(from_line.saturating_sub(1))
-    // }
+    /// Get lines count
+    pub fn lines_count(&self) -> usize {
+        self.rope.lines_count()
+    }
+
+    /// Get length of line `line`.
+    /// Note that lines indexing starts from 1
+    pub fn line_length(&self, line: usize) -> Option<usize> {
+        self.rope.line_length(line)
+    }
 
     /// Expose underlying Rope read-only way
     pub fn get_rope(&self) -> &Rope {
@@ -72,18 +77,25 @@ impl Buffer {
     }
 
     /// Return an iterator over selections
-    pub fn selections_iter(&self) -> impl Iterator<Item = crate::Selection> + '_ {
-        self.selection_storage.iter().map(|s| s.into())
+    pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection> + '_ {
+        let rope_ref = &self.rope;
+        self.selection_storage
+            .iter()
+            .map(move |s| crate::BindedSelection::new(s, rope_ref))
     }
 
-    // /// Return an iterator over selections
-    // pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
-    //     let rope_ref = &self.rope;
-    //     self.selection_storage.iter().map(move |s| crate::BindedSelection::new(s, rope_ref))
-    // }
+    /// Create Position with required context
+    pub fn create_position(&self, line: usize, col: usize) -> crate::BindedPosition {
+        let pos = Position {
+            line: line.into(),
+            col: col.into(),
+        };
+        crate::BindedPosition::new(pos, &self.rope)
+    }
 
-    /// Return an iterator over selection since `line`
-    pub fn selections_at(&self, line: usize) -> impl Iterator<Item = &Selection> + '_ {
+    /// Return an iterator over selections since `line`
+    pub fn selections_at(&self, line: usize) -> impl Iterator<Item = crate::BindedSelection> + '_ {
+        let rope_ref = &self.rope;
         let pos: SelectionIntersect = Selection::from(Position {
             line: line.into(),
             col: 1.into(),
@@ -92,7 +104,7 @@ impl Buffer {
         self.selection_storage
             .selections_tree
             .range(pos..)
-            .map(|si| &si.0)
+            .map(move |si| crate::BindedSelection::new(si.0.clone(), rope_ref))
     }
 
     /// Swap selections' cursor position.
@@ -229,7 +241,7 @@ impl LineLength for Rope {
 
         // FIXME: \n and \r do not cover all newline things afaik
         // Also desired len is in grapheme clusters not String's .len()
-        if line > 0 && line <= self.count() {
+        if line > 0 && line <= self.lines_count() {
             let s = self.line(line - 1).to_string();
             Some(s.trim_end_matches(|x| x == '\n' || x == '\r').len() + 1)
         } else {
@@ -237,18 +249,8 @@ impl LineLength for Rope {
         }
     }
 
-    fn count(&self) -> usize {
+    fn lines_count(&self) -> usize {
         self.len_lines()
-    }
-}
-
-impl LineLength for &Rope {
-    fn line_length(&self, line: usize) -> Option<usize> {
-        (*self).line_length(line)
-    }
-
-    fn count(&self) -> usize {
-        (*self).len_lines()
     }
 }
 
