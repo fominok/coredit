@@ -40,6 +40,60 @@ pub trait LineLength {
     fn count(&self) -> usize;
 }
 
+/// Selection with linked sources like `LineLength`
+/// which makes it context-aware and simplifies its usage
+pub struct BindedSelection<'a> {
+    wrapped_selection: Selection,
+    line_length: &'a dyn LineLength,
+}
+
+impl<'a> BindedSelection<'a> {
+    pub(crate) fn new(selection: Selection, line_length: &'a dyn LineLength) -> Self {
+        BindedSelection {
+            wrapped_selection: selection,
+            line_length: line_length,
+        }
+    }
+
+    /// Check if the selection's length equals to 1.
+    pub fn is_point(&self) -> bool {
+        self.wrapped_selection.is_point()
+    }
+}
+
+/// Position with linked sources like `LineLength`
+/// which makes it context-aware and simplifies its usage
+pub struct BindedPosition<'a> {
+    wrapped_position: Position,
+    line_length: &'a dyn LineLength,
+}
+
+impl<'a> BindedPosition<'a> {
+    pub(crate) fn new(position: Position, line_length: &'a dyn LineLength) -> Self {
+        BindedPosition {
+            wrapped_position: position,
+            line_length: line_length,
+        }
+    }
+
+    /// Return a position which follows the callee.
+    /// Returns `None` if called for the last possible position in
+    /// buffer.
+    pub fn successor(&self) -> Option<Self> {
+        self.wrapped_position
+            .successor(self.line_length)
+            .map(|pos| Self::new(pos, self.line_length))
+    }
+
+    /// Return a position which is before the callee
+    /// Returns `None` if called for the beginning of buffer.
+    pub fn predecessor(&self) -> Option<Self> {
+        self.wrapped_position
+            .predecessor(self.line_length)
+            .map(|pos| Self::new(pos, self.line_length))
+    }
+}
+
 // The next one is aimed to hide `PositiveUsize` from API
 
 /// Coordinates in a buffer

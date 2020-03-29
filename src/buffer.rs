@@ -76,6 +76,12 @@ impl Buffer {
         self.selection_storage.iter().map(|s| s.into())
     }
 
+    // /// Return an iterator over selections
+    // pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
+    //     let rope_ref = &self.rope;
+    //     self.selection_storage.iter().map(move |s| crate::BindedSelection::new(s, rope_ref))
+    // }
+
     /// Return an iterator over selection since `line`
     pub fn selections_at(&self, line: usize) -> impl Iterator<Item = &Selection> + '_ {
         let pos: SelectionIntersect = Selection::from(Position {
