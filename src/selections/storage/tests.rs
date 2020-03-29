@@ -1,5 +1,6 @@
 mod add_selections;
 mod merge;
+mod misc;
 mod movements;
 use super::*;
 

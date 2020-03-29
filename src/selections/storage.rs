@@ -25,17 +25,37 @@ pub(crate) struct SelectionStorage {
     // current SelectionStorage implementation which inserts
     // twice to eleminate overlaps.
     pub(crate) selections_tree: BTreeSet<SelectionIntersect>,
+
+    /// One of selections must be marked as `main selection`.
+    /// As selection is atomic it should not carry such information
+    /// as there is a contract that only one selection in the storage
+    /// can be `main` thus such information should be lifted to the
+    /// storage.
+    ///
+    /// Here are some rules:
+    /// 1. on merge, if one selection was marked as `main`, resulting
+    ///    selection becomes `main`;
+    /// 2. on placing selections under existing ones, the new `main`
+    ///    is that selection which was placed under previous `main`
+    /// 3. if creating selections from a bigger one (search, split)
+    ///    the last created selection is the new `main` (not sure if
+    ///    it sounds as it might be better to mark `main` the last one
+    ///    within parts created from a bigger `main` not overall last,
+    ///    but it is how Kakoune does)
+    main_selection_ptr: Position,
 }
 
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub(crate) fn new() -> Self {
         let selection: Selection = Default::default();
+        let from = selection.from;
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
 
         SelectionStorage {
             selections_tree: tree,
+            main_selection_ptr: from,
         }
     }
 
@@ -45,11 +65,17 @@ impl SelectionStorage {
     /// tail.
     pub(crate) fn add_selection(&mut self, ns: Selection) {
         if let Some(mut s) = self.find_hit_take(ns.from) {
+            if self.main_selection_ptr == ns.from {
+                self.main_selection_ptr = s.from;
+            }
             s.to = ns.to;
             // Here is a recursive call to verify that the new selection
             // has no overlaps
             self.add_selection(s);
         } else if let Some(mut s) = self.find_hit_take(ns.to) {
+            if self.main_selection_ptr == s.from {
+                self.main_selection_ptr = ns.from;
+            }
             s.from = ns.from;
             self.add_selection(s);
         } else {
@@ -155,6 +181,12 @@ impl SelectionStorage {
         self.iter().rev().find(|s| s.to < before.from)
     }
 
+    /// Get a right neighbour for the selection.
+    /// It will be `None` if called for the last selection in the buffer.
+    pub(crate) fn get_first_after(&self, after: &Selection) -> Option<Selection> {
+        self.iter().find(|s| s.from > after.to)
+    }
+
     /// Compute selection storage after the selection deletion.
     pub(crate) fn apply_delete<L: LineLength>(&mut self, mut to_delete: Selection, line_length: L) {
         let (from, to) = to_delete.get_bounds();
@@ -219,6 +251,9 @@ impl SelectionStorage {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
         for s in selections_old.into_iter().map(|x| x.0) {
             if let Some(selection_under) = s.create_selection_under(line_length.clone()) {
+                if self.main_selection_ptr == s.from {
+                    self.main_selection_ptr = selection_under.from;
+                }
                 self.add_selection(selection_under);
             }
             self.add_selection(s);
