@@ -34,7 +34,7 @@ If you want to use this crate to create an editor with `|` style
 cursor think about it like you still have a selection of a character
 after it, at least when you press `Delete` something gets
 deleted even if it is "not selected". One case when it should be
-drawn _after_ is a selection with a cursor placed in the end.
+drawn _after_ is a selection with a cursor placed in the end. (ok I may be wrong)
 
 [crates-io-badge]: https://img.shields.io/crates/v/coredit.svg
 [crates-io-url]: https://crates.io/crates/coredit
