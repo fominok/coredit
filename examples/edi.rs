@@ -2,8 +2,9 @@ use coredit::{BindedPosition, BindedSelection, Buffer, CursorDirection};
 use cursive::event::{self, Event, EventResult};
 use cursive::theme;
 use cursive::traits::*;
-use cursive::{Cursive, Printer};
+use cursive::{Cursive, Printer, CursiveExt};
 use std::fs::File;
+
 
 // This example define a custom view that prints any event it receives.
 // This is a handy way to check the input received by cursive.

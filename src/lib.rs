@@ -30,7 +30,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// component, so underlying text may be abstracted from selection
 /// when only lengths of some lines are required.
 ///
-/// For selections thests usage of this trait makes a rope creation and
+/// For selections tests usage of this trait makes a rope creation and
 /// filling unnecessary.
 pub(crate) trait LineLength {
     /// Return the length of the line specified by `line`. Note the first
