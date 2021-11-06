@@ -4,21 +4,18 @@ mod buffer;
 mod selections;
 mod util;
 pub use buffer::Buffer;
+pub use ropey::Rope;
 pub use selections::CursorDirection;
 use selections::{Position, Selection};
-use snafu::Snafu;
 use std::cmp::Ordering;
 use std::io;
 
 /// Crate's error type
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Failure on buffer creation from `Reader`
-    #[snafu(display("Unable to create buffer with reader: {}", source))]
-    CreateFromReader {
-        /// Source error raised by Ropey
-        source: io::Error,
-    },
+    #[error("Unable to create buffer with reader: {0}")]
+    CreateFromReader(#[from] io::Error),
 }
 
 /// Result with crate's error type applied
@@ -32,7 +29,7 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 ///
 /// For selections tests usage of this trait makes a rope creation and
 /// filling unnecessary.
-pub(crate) trait LineLength {
+pub trait LineLength {
     /// Return the length of the line specified by `line`. Note the first
     /// line has the index equal 1.
     fn line_length(&self, line: usize) -> Option<usize>;
@@ -53,16 +50,16 @@ impl<T: LineLength + ?Sized> LineLength for &T {
 
 /// Selection with linked sources like `LineLength`
 /// which makes it context-aware and simplifies its usage
-pub struct BindedSelection<'a> {
+pub struct BindedSelection<L: LineLength + Copy> {
     wrapped_selection: Selection,
-    line_length: &'a dyn LineLength,
+    line_length: L,
 }
 
-impl<'a> BindedSelection<'a> {
-    pub(crate) fn new(selection: Selection, line_length: &'a dyn LineLength) -> Self {
+impl<L: LineLength + Copy> BindedSelection<L> {
+    pub(crate) fn new(selection: Selection, line_length: L) -> Self {
         BindedSelection {
             wrapped_selection: selection,
-            line_length: line_length,
+            line_length,
         }
     }
 
@@ -72,17 +69,17 @@ impl<'a> BindedSelection<'a> {
     }
 
     /// Get `from` position
-    pub fn from(&self) -> BindedPosition {
+    pub fn from(&self) -> BindedPosition<L> {
         BindedPosition::new(self.wrapped_selection.from, self.line_length)
     }
 
     /// Get `to` position
-    pub fn to(&self) -> BindedPosition {
+    pub fn to(&self) -> BindedPosition<L> {
         BindedPosition::new(self.wrapped_selection.to, self.line_length)
     }
 
     /// Returns `from`, `to` pair consuming selection
-    pub fn coords(self) -> (BindedPosition<'a>, BindedPosition<'a>) {
+    pub fn coords(self) -> (BindedPosition<L>, BindedPosition<L>) {
         (
             BindedPosition::new(self.wrapped_selection.from, self.line_length),
             BindedPosition::new(self.wrapped_selection.to, self.line_length),
@@ -98,16 +95,16 @@ impl<'a> BindedSelection<'a> {
 /// Position with linked sources like `LineLength`
 /// which makes it context-aware and simplifies its usage
 #[derive(Copy, Clone)]
-pub struct BindedPosition<'a> {
+pub struct BindedPosition<L: LineLength + Copy> {
     wrapped_position: Position,
-    line_length: &'a dyn LineLength,
+    line_length: L,
 }
 
-impl<'a> BindedPosition<'a> {
-    pub(crate) fn new(position: Position, line_length: &'a dyn LineLength) -> Self {
+impl<L: LineLength + Copy> BindedPosition<L> {
+    pub(crate) fn new(position: Position, line_length: L) -> Self {
         BindedPosition {
             wrapped_position: position,
-            line_length: line_length,
+            line_length,
         }
     }
 
@@ -144,13 +141,13 @@ impl<'a> BindedPosition<'a> {
     }
 }
 
-impl PartialEq for BindedPosition<'_> {
+impl<L: LineLength + Copy> PartialEq for BindedPosition<L> {
     fn eq(&self, rhs: &Self) -> bool {
         self.wrapped_position.eq(&rhs.wrapped_position)
     }
 }
 
-impl PartialOrd for BindedPosition<'_> {
+impl<L: LineLength + Copy> PartialOrd for BindedPosition<L> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.wrapped_position.partial_cmp(&other.wrapped_position)
     }

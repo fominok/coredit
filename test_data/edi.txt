@@ -1,0 +1,9 @@
+Welcome to edi --- a simple editor based on coredit!
+
+Here is a list of keybindings:
+Arrows: move cursor (or many of them) around
+Shift + Arrows: extend selection(s)
+Backspace: delete selections and select previous character
+Alt + c: create selection under the last one on a next line
+    with suitable length
+Ctrl + c: quit

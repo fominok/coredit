@@ -1,13 +1,9 @@
-use coredit::{BindedPosition, BindedSelection, Buffer, CursorDirection};
+use coredit::{BindedPosition, BindedSelection, Buffer, CursorDirection, Rope};
 use cursive::event::{self, Event, EventResult};
 use cursive::theme;
 use cursive::traits::*;
-use cursive::{Cursive, Printer, CursiveExt};
+use cursive::{Cursive, CursiveExt, Printer};
 use std::fs::File;
-
-
-// This example define a custom view that prints any event it receives.
-// This is a handy way to check the input received by cursive.
 
 fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
     theme::ColorStyle {
@@ -16,14 +12,19 @@ fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
     }
 }
 
-fn position_to_char_idx(b: &Buffer, p: BindedPosition) -> usize {
-    ////let line_length = b.get_rope().line_length(p.line).unwrap();
+fn position_to_char_idx(b: &Buffer, p: BindedPosition<&Rope>) -> usize {
     b.get_rope().line_to_char(p.line() - 1) + p.col() - 1
 }
 
-type ColoredInterval<'a> = (BindedPosition<'a>, BindedPosition<'a>, IntervalColor);
+type ColoredInterval<'a> = (
+    BindedPosition<&'a Rope>,
+    BindedPosition<&'a Rope>,
+    IntervalColor,
+);
 
-fn selection_to_colored_interval_pair<'a>(s: BindedSelection<'a>) -> Vec<ColoredInterval<'a>> {
+fn selection_to_colored_interval_pair<'a>(
+    s: BindedSelection<&'a Rope>,
+) -> Vec<ColoredInterval<'a>> {
     let is_point = s.is_point();
     let cursor_direction = s.cursor_direction();
     let (from, to) = s.coords();
@@ -106,11 +107,11 @@ fn split_intervals_by_lines<'a>(
 
 fn main() {
     better_panic::install();
-    let sample_file = File::open("test_data/sample_text.txt").unwrap();
+    let sample_file = File::open("test_data/edi.txt").unwrap();
 
     let mut buffer = Buffer::from_reader(sample_file).unwrap();
-    buffer.move_right(5, false);
-    buffer.move_right(10, true);
+    buffer.move_right(11, false);
+    buffer.move_right(2, true);
     buffer.swap_cursor();
 
     let mut siv = Cursive::default();
@@ -123,7 +124,6 @@ fn main() {
     siv.run();
 }
 
-// Our view will have a small history of the last events.
 struct KeyCodeView {
     buffer: Buffer,
 }
@@ -141,8 +141,6 @@ enum IntervalColor {
     Cursor,
 }
 
-// Let's implement the `View` trait.
-// `View` contains many methods, but only a few are required.
 impl View for KeyCodeView {
     fn draw(&self, printer: &Printer) {
         let mut selections_colors: Vec<ColoredInterval> = self

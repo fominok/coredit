@@ -1,9 +1,8 @@
 use crate::selections::storage::{SelectionIntersect, SelectionStorage};
 use crate::selections::{Position, Selection};
-use crate::{CreateFromReader, LineLength, Result};
+use crate::{LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
-use snafu::ResultExt;
 use std::fmt;
 use std::io;
 
@@ -53,7 +52,7 @@ impl Buffer {
     /// assert!(buffer.to_string().starts_with("That was easy"));
     /// ```
     pub fn from_reader<R: io::Read>(reader: R) -> Result<Self> {
-        let rope = Rope::from_reader(reader).context(CreateFromReader)?;
+        let rope = Rope::from_reader(reader)?;
         Ok(Buffer {
             rope,
             selection_storage: SelectionStorage::new(),
@@ -77,7 +76,7 @@ impl Buffer {
     }
 
     /// Return an iterator over selections
-    pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection> + '_ {
+    pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
         let rope_ref = &self.rope;
         self.selection_storage
             .iter()
@@ -85,7 +84,7 @@ impl Buffer {
     }
 
     /// Create Position with required context
-    pub fn create_position(&self, line: usize, col: usize) -> crate::BindedPosition {
+    pub fn create_position(&self, line: usize, col: usize) -> crate::BindedPosition<&Rope> {
         let pos = Position {
             line: line.into(),
             col: col.into(),
@@ -94,7 +93,10 @@ impl Buffer {
     }
 
     /// Return an iterator over selections since `line`
-    pub fn selections_at(&self, line: usize) -> impl Iterator<Item = crate::BindedSelection> + '_ {
+    pub fn selections_at(
+        &self,
+        line: usize,
+    ) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
         let rope_ref = &self.rope;
         let pos: SelectionIntersect = Selection::from(Position {
             line: line.into(),
