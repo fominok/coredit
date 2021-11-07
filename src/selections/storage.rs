@@ -1,7 +1,7 @@
 //! Selections storage API with an implementation respecting multiple selections
 //! interaction.
 use super::{CursorDirection, Position, Selection};
-use crate::LineLength;
+use crate::{BindedSelection, Delta, LineLength};
 #[cfg(test)]
 mod tests;
 
@@ -91,23 +91,31 @@ impl SelectionStorage {
     }
 
     /// Apply functions to each of selections making a new tree in place of the old one.
-    fn apply_to_selections<F>(&mut self, mut f: F)
+    fn apply_to_selections<F, L: LineLength + Copy>(
+        &mut self,
+        f: F,
+        line_length: L,
+    ) -> Vec<Delta<L>>
     where
-        F: FnMut(&mut Selection) -> (),
+        F: Fn(Selection) -> Selection,
     {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        let mut deltas = Vec::with_capacity(selections_old.len());
         for s in selections_old {
-            let mut selection = s.0;
-            f(&mut selection);
-            self.add_selection(selection);
+            let old_selection = s.0;
+            let new_selection = f(old_selection.clone());
+            self.add_selection(new_selection.clone());
+            deltas.push(Delta::SelectionChanged {
+                old: BindedSelection::new(old_selection, line_length),
+                new: BindedSelection::new(new_selection, line_length),
+            })
         }
+        deltas
     }
 
     /// Swap selections' cursor.
-    pub(crate) fn swap_cursor(&mut self) {
-        self.apply_to_selections(move |s| {
-            s.swap_cursor();
-        });
+    pub(crate) fn swap_cursor<L: LineLength + Copy>(&mut self, line_length: L) -> Vec<Delta<L>> {
+        self.apply_to_selections(move |s| s.swap_cursor(), line_length)
     }
 
     /// Move left all selections.
@@ -116,10 +124,8 @@ impl SelectionStorage {
         n: usize,
         extend: bool,
         line_length: L,
-    ) {
-        self.apply_to_selections(move |s| {
-            s.move_left(n, extend, line_length);
-        });
+    ) -> Vec<Delta<L>> {
+        self.apply_to_selections(move |s| s.move_left(n, extend, line_length), line_length)
     }
 
     /// Move right all selections.
@@ -128,17 +134,18 @@ impl SelectionStorage {
         n: usize,
         extend: bool,
         line_length: L,
-    ) {
-        self.apply_to_selections(move |s| {
-            s.move_right(n, extend, line_length);
-        });
+    ) -> Vec<Delta<L>> {
+        self.apply_to_selections(move |s| s.move_right(n, extend, line_length), line_length)
     }
 
     /// Move up all selections.
-    pub(crate) fn move_up<L: LineLength + Copy>(&mut self, n: usize, extend: bool, line_length: L) {
-        self.apply_to_selections(move |s| {
-            s.move_up(n, extend, line_length);
-        });
+    pub(crate) fn move_up<L: LineLength + Copy>(
+        &mut self,
+        n: usize,
+        extend: bool,
+        line_length: L,
+    ) -> Vec<Delta<L>> {
+        self.apply_to_selections(move |s| s.move_up(n, extend, line_length), line_length)
     }
 
     /// Move down all selections.
@@ -147,10 +154,8 @@ impl SelectionStorage {
         n: usize,
         extend: bool,
         line_length: L,
-    ) {
-        self.apply_to_selections(move |s| {
-            s.move_down(n, extend, line_length);
-        });
+    ) -> Vec<Delta<L>> {
+        self.apply_to_selections(move |s| s.move_down(n, extend, line_length), line_length)
     }
 
     /// Create an iterator

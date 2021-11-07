@@ -16,7 +16,7 @@ pub(crate) struct Position {
 }
 
 impl Position {
-    /// Return a position which follows the callee.
+    /// Returns a following position.
     /// Returns `None` if called for the last possible position in
     /// buffer.
     pub(crate) fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
@@ -38,7 +38,7 @@ impl Position {
         }
     }
 
-    /// Return a position which is before the callee
+    /// Returns a previous position.
     /// Returns `None` if called for the beginning of buffer.
     pub(crate) fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
@@ -58,7 +58,7 @@ impl Position {
         }
     }
 
-    /// Check if is line end (semantically points at newline)
+    /// Check if is line end (technically points at newline)
     pub(crate) fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
         line_length
             .line_length(self.line.get())
@@ -119,7 +119,12 @@ impl Selection {
     }
 
     /// Swap selection's cursor.
-    pub(crate) fn swap_cursor(&mut self) {
+    pub(crate) fn swap_cursor(mut self) -> Selection {
+        self.swap_cursor_mut();
+        self
+    }
+
+    fn swap_cursor_mut(&mut self) {
         if self.from != self.to {
             self.cursor_direction.inverse();
         }
@@ -130,7 +135,7 @@ impl Selection {
     fn fix_direction(&mut self) {
         if self.from > self.to {
             std::mem::swap(&mut self.from, &mut self.to);
-            self.swap_cursor();
+            self.swap_cursor_mut();
         }
     }
 
@@ -214,7 +219,12 @@ impl Selection {
     // Actions triggered by user directly (meaning "move_x" command, not a helper methods):
 
     /// Move cursor left by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_left<L: LineLength>(&mut self, mut n: usize, extend: bool, line_length: L) {
+    pub(crate) fn move_left<L: LineLength>(
+        mut self,
+        mut n: usize,
+        extend: bool,
+        line_length: L,
+    ) -> Selection {
         let cursor = self.get_cursor_mut();
         loop {
             if n >= cursor.col.into() {
@@ -237,10 +247,16 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
+        self
     }
 
     /// Move cursor right by n characters, handling line lengthes and buffer bounds
-    pub(crate) fn move_right<L: LineLength>(&mut self, mut n: usize, extend: bool, line_length: L) {
+    pub(crate) fn move_right<L: LineLength>(
+        mut self,
+        mut n: usize,
+        extend: bool,
+        line_length: L,
+    ) -> Selection {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
@@ -266,12 +282,18 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
+        self
     }
 
     /// Move cursor up by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_up<L: LineLength>(&mut self, n: usize, extend: bool, line_length: L) {
+    pub(crate) fn move_up<L: LineLength>(
+        mut self,
+        n: usize,
+        extend: bool,
+        line_length: L,
+    ) -> Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
@@ -295,12 +317,18 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
+        self
     }
 
     /// Move cursor down by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_down<L: LineLength>(&mut self, n: usize, extend: bool, line_length: L) {
+    pub(crate) fn move_down<L: LineLength>(
+        mut self,
+        n: usize,
+        extend: bool,
+        line_length: L,
+    ) -> Selection {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = cursor.line.get() + n;
@@ -330,6 +358,7 @@ impl Selection {
         if !extend {
             self.drop_selection();
         }
+        self
     }
 
     pub(crate) fn create_selection_under<L: LineLength>(&self, line_length: L) -> Option<Self> {

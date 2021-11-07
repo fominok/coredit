@@ -153,6 +153,25 @@ impl<L: LineLength + Copy> PartialOrd for BindedPosition<L> {
     }
 }
 
+/// Buffer's feedback for optimal redraws or any other case when full buffer
+/// contents not needed
+pub enum Delta<'a, L: LineLength + Copy> {
+    /// A selection identifiable by `old` moved into `new` state
+    SelectionChanged {
+        /// Old selection state
+        old: BindedSelection<L>,
+        /// New selection state
+        new: BindedSelection<L>,
+    },
+    /// Line's contents changed
+    LineChanged {
+        /// Line index
+        idx: usize,
+        /// Line new content
+        content: &'a str,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     //! For selections tests a commonly used implementor of `LineLength`
