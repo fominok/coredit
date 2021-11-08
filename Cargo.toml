@@ -2,7 +2,7 @@
 name = "coredit"
 version = "0.1.0"
 authors = ["Evgeny Fomin <fominok@hotmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Core part of your text editor"
 keywords = ["text", "buffer", "edit"]
 categories = ["text-editors"]

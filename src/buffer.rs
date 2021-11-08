@@ -76,28 +76,24 @@ impl Buffer {
     }
 
     /// Return an iterator over selections
-    pub fn selections_iter(&self) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
-        let rope_ref = &self.rope;
+    pub fn selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
         self.selection_storage
             .iter()
-            .map(move |s| crate::BindedSelection::new(s, rope_ref))
     }
 
     /// Create Position with required context
-    pub fn create_position(&self, line: usize, col: usize) -> crate::BindedPosition<&Rope> {
-        let pos = Position {
+    pub fn create_position(&self, line: usize, col: usize) -> Position {
+        Position {
             line: line.into(),
             col: col.into(),
-        };
-        crate::BindedPosition::new(pos, &self.rope)
+        }
     }
 
     /// Return an iterator over selections since `line`
     pub fn selections_at(
         &self,
         line: usize,
-    ) -> impl Iterator<Item = crate::BindedSelection<&Rope>> + '_ {
-        let rope_ref = &self.rope;
+    ) -> impl Iterator<Item = Selection> + '_ {
         let pos: SelectionIntersect = Selection::from(Position {
             line: line.into(),
             col: 1.into(),
@@ -106,7 +102,7 @@ impl Buffer {
         self.selection_storage
             .selections_tree
             .range(pos..)
-            .map(move |si| crate::BindedSelection::new(si.0.clone(), rope_ref))
+            .map(|si| si.0.clone())
     }
 
     /// Swap selections' cursor position.

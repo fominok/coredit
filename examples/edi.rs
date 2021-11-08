@@ -1,4 +1,4 @@
-use coredit::{BindedPosition, BindedSelection, Buffer, CursorDirection, Rope};
+use coredit::{Buffer, CursorDirection, Position, Selection};
 use cursive::event::{self, Event, EventResult};
 use cursive::theme;
 use cursive::traits::*;
@@ -12,22 +12,16 @@ fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
     }
 }
 
-fn position_to_char_idx(b: &Buffer, p: BindedPosition<&Rope>) -> usize {
-    b.get_rope().line_to_char(p.line() - 1) + p.col() - 1
+fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
+    b.get_rope().line_to_char(p.line.get() - 1) + p.col.get() - 1
 }
 
-type ColoredInterval<'a> = (
-    BindedPosition<&'a Rope>,
-    BindedPosition<&'a Rope>,
-    IntervalColor,
-);
+type ColoredInterval = (Position, Position, IntervalColor);
 
-fn selection_to_colored_interval_pair<'a>(
-    s: BindedSelection<&'a Rope>,
-) -> Vec<ColoredInterval<'a>> {
+fn selection_to_colored_interval_pair(s: Selection) -> Vec<ColoredInterval> {
     let is_point = s.is_point();
-    let cursor_direction = s.cursor_direction();
-    let (from, to) = s.coords();
+    let cursor_direction = s.cursor_direction;
+    let Selection { from, to, .. } = s;
     if is_point {
         vec![(to, to, IntervalColor::Cursor)]
     } else {
@@ -46,8 +40,8 @@ fn selection_to_colored_interval_pair<'a>(
 
 fn fill_missing_intervals<'a>(
     b: &'a Buffer,
-    intervals: Vec<ColoredInterval<'a>>,
-) -> Vec<ColoredInterval<'a>> {
+    intervals: Vec<ColoredInterval>,
+) -> Vec<ColoredInterval> {
     let last_pos = b.create_position(b.lines_count(), b.line_length(b.lines_count()).unwrap());
     let mut previous_pos = Some(b.create_position(1, 1));
     let mut result = vec![];
@@ -73,8 +67,8 @@ fn fill_missing_intervals<'a>(
 
 fn split_intervals_by_lines<'a>(
     b: &'a Buffer,
-    intervals: Vec<ColoredInterval<'a>>,
-) -> Vec<ColoredInterval<'a>> {
+    intervals: Vec<ColoredInterval>,
+) -> Vec<ColoredInterval> {
     let mut result = vec![];
     for int in intervals.iter() {
         if int.0.line() == int.1.line() {
