@@ -158,9 +158,9 @@ pub enum Delta<'a> {
     /// A selection identifiable by `old` moved into `new` state
     SelectionChanged {
         /// Old selection state
-        old: Selection,
+        old: Selection<'a>,
         /// New selection state
-        new: Selection,
+        new: Selection<'a>,
     },
     /// Line's contents changed
     LineChanged {

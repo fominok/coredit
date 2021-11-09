@@ -1,37 +1,73 @@
 //! Code specific to individual selection
 pub(crate) mod storage;
-use crate::util::PositiveUsize;
 use crate::LineLength;
+use crate::{util::PositiveUsize, Buffer};
 #[cfg(test)]
 mod tests;
+
+/// A position with binded to a buffer
+#[derive(Debug, Clone)]
+pub struct Position<'a> {
+    /// Internal raw position
+    pub(crate) position: PositionRaw,
+    /// Buffer reference required for line lengths
+    pub(crate) buffer: &'a Buffer,
+}
+
+impl PartialEq for Position<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        (self.buffer as *const _ == other.buffer as *const _) && self.position == other.position
+    }
+}
+
+impl Eq for Position<'_> {}
+
+impl PartialOrd for Position<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // Only positions linked to the same buffer could be compared
+        if self.buffer as *const _ == other.buffer as *const _ {
+            self.position.partial_cmp(&other.position)
+        } else {
+            None
+        }
+    }
+}
 
 /// A position in a text buffer represented by 1-based numbered
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
-pub struct Position {
+pub(crate) struct PositionRaw {
     /// One-indexed line
-    pub line: PositiveUsize,
+    pub(crate) line: PositiveUsize,
     /// One-indexed column
-    pub col: PositiveUsize,
+    pub(crate) col: PositiveUsize,
 }
 
-impl Position {
+impl PositionRaw {
+    /// Build a binded position
+    pub(crate) fn binded(self, buffer: &Buffer) -> Position {
+        Position {
+            position: self,
+            buffer,
+        }
+    }
+
     /// Returns a following position.
     /// Returns `None` if called for the last possible position in
     /// buffer.
-    pub fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
+    pub(crate) fn successor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         let lines_count = line_length.lines_count();
         if self.is_line_end(line_length) {
             if lines_count == self.line.get() {
                 None
             } else {
-                Some(Position {
+                Some(PositionRaw {
                     col: 1.into(),
                     line: self.line + 1.into(),
                 })
             }
         } else {
-            Some(Position {
+            Some(PositionRaw {
                 col: self.col + 1.into(),
                 line: self.line,
             })
@@ -43,7 +79,7 @@ impl Position {
     pub fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
             if let Some(length) = line_length.line_length(self.line.get() - 1) {
-                Some(Position {
+                Some(PositionRaw {
                     line: self.line - 1.into(),
                     col: length.into(),
                 })
@@ -51,7 +87,7 @@ impl Position {
                 None
             }
         } else {
-            Some(Position {
+            Some(PositionRaw {
                 col: self.col - 1.into(),
                 line: self.line,
             })
@@ -93,13 +129,32 @@ impl CursorDirection {
     }
 }
 
-/// Selection is as pair of positions, which are pairs of line/column values.
+/// Selection is as pair of positions, which are pairs of line/column values with
+/// a cursor in the beginning or in the end, attached to a buffer.
+#[derive(Debug, Clone)]
+pub struct Selection<'a> {
+    /// Inner selection
+    pub(crate) selection: SelectionRaw,
+    /// Link to the buffer
+    pub(crate) buffer: &'a Buffer,
+}
+
+impl PartialEq for Selection<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        (self.buffer as *const _ == other.buffer as *const _) &&  self.selection == other.selection
+    }
+}
+
+impl Eq for Selection<'_> {}
+
+/// Selection is as pair of positions, which are pairs of line/column values with
+/// a cursor in the beginning or in the end.
 #[derive(Default, Debug, PartialEq, Clone)]
-pub struct Selection {
+pub(crate) struct SelectionRaw {
     /// One of the selection's ends nearest to the buffer's beginning
-    pub from: Position,
+    pub from: PositionRaw,
     /// One of the selection's ends nearest to the buffer's end
-    pub to: Position,
+    pub to: PositionRaw,
     /// One of the selection's ends is marked as a "cursor", if it's on the right,
     /// then selection's cursor direction is `Forward`.
     pub cursor_direction: CursorDirection,
@@ -112,14 +167,22 @@ pub struct Selection {
     pub(crate) sticky_column: Option<PositiveUsize>,
 }
 
-impl Selection {
+impl SelectionRaw {
+    /// Build a binded selection
+    pub(crate) fn binded(self, buffer: &Buffer) -> Selection {
+        Selection {
+            selection: self,
+            buffer,
+        }
+    }
+
     /// Check if the selection's length equals to 1.
     pub fn is_point(&self) -> bool {
         self.from == self.to
     }
 
     /// Swap selection's cursor.
-    pub(crate) fn swap_cursor(mut self) -> Selection {
+    pub(crate) fn swap_cursor(mut self) -> Self {
         self.swap_cursor_mut();
         self
     }
@@ -165,7 +228,7 @@ impl Selection {
     }
 
     /// Get cursor reference
-    pub(crate) fn get_cursor(&self) -> &Position {
+    pub(crate) fn get_cursor(&self) -> &PositionRaw {
         match self.cursor_direction {
             CursorDirection::Forward => &self.to,
             CursorDirection::Backward => &self.from,
@@ -173,12 +236,12 @@ impl Selection {
     }
 
     /// Get positions pair references
-    pub(crate) fn get_bounds(&self) -> (Position, Position) {
+    pub(crate) fn get_bounds(&self) -> (PositionRaw, PositionRaw) {
         (self.from, self.to)
     }
 
     /// Get cursor mutable reference for inplace operations
-    pub(crate) fn get_cursor_mut(&mut self) -> &mut Position {
+    pub(crate) fn get_cursor_mut(&mut self) -> &mut PositionRaw {
         match self.cursor_direction {
             CursorDirection::Forward => &mut self.to,
             CursorDirection::Backward => &mut self.from,
@@ -224,7 +287,7 @@ impl Selection {
         mut n: usize,
         extend: bool,
         line_length: L,
-    ) -> Selection {
+    ) -> Self {
         let cursor = self.get_cursor_mut();
         loop {
             if n >= cursor.col.into() {
@@ -256,7 +319,7 @@ impl Selection {
         mut n: usize,
         extend: bool,
         line_length: L,
-    ) -> Selection {
+    ) -> Self {
         let cursor = self.get_cursor_mut();
         let mut fallback = *cursor;
         loop {
@@ -288,12 +351,7 @@ impl Selection {
     /// Move cursor up by n lines, handling line lengthes and buffer bounds;
     /// If line is shorter, then previous column is preserved as sticky column
     /// and will be restored on enough lenth.
-    pub(crate) fn move_up<L: LineLength>(
-        mut self,
-        n: usize,
-        extend: bool,
-        line_length: L,
-    ) -> Selection {
+    pub(crate) fn move_up<L: LineLength>(mut self, n: usize, extend: bool, line_length: L) -> Self {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         cursor.line.sub_assign(n);
@@ -328,7 +386,7 @@ impl Selection {
         n: usize,
         extend: bool,
         line_length: L,
-    ) -> Selection {
+    ) -> Self {
         let current_sticky_column = self.sticky_column;
         let cursor = self.get_cursor_mut();
         let target: usize = cursor.line.get() + n;
@@ -368,12 +426,12 @@ impl Selection {
         while let Some(length_to) = line_length.line_length(line_idx) {
             if let Some(length_from) = line_length.line_length(line_idx - width) {
                 if length_from >= self.from.col.get() && length_to >= self.to.col.get() {
-                    return Some(Selection {
-                        from: Position {
+                    return Some(Self {
+                        from: PositionRaw {
                             line: (line_idx - width).into(),
                             col: self.from.col,
                         },
-                        to: Position {
+                        to: PositionRaw {
                             line: line_idx.into(),
                             col: self.to.col,
                         },
@@ -398,12 +456,12 @@ impl Selection {
         tail_col: usize,
         cursor_direction: CursorDirection,
     ) -> Self {
-        Selection {
-            from: Position {
+        Self {
+            from: PositionRaw {
                 line: head_line.into(),
                 col: head_col.into(),
             },
-            to: Position {
+            to: PositionRaw {
                 line: tail_line.into(),
                 col: tail_col.into(),
             },
@@ -448,9 +506,9 @@ impl Selection {
 
 /// Selection of length 1 is simply a cursor thus can be
 /// created from [Position](../struct.Position.html) of it
-impl From<Position> for Selection {
-    fn from(position: Position) -> Self {
-        Selection {
+impl<'a> From<PositionRaw> for SelectionRaw {
+    fn from(position: PositionRaw) -> Self {
+        SelectionRaw {
             from: position,
             to: position,
             cursor_direction: CursorDirection::Forward,

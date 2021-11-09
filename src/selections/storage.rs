@@ -1,7 +1,7 @@
 //! Selections storage API with an implementation respecting multiple selections
 //! interaction.
-use super::{CursorDirection, Position, Selection};
-use crate::{Delta, LineLength};
+use super::{CursorDirection, Position, PositionRaw, Selection, SelectionRaw};
+use crate::{Buffer, Delta, LineLength};
 #[cfg(test)]
 mod tests;
 
@@ -42,13 +42,13 @@ pub(crate) struct SelectionStorage {
     ///    it sounds as it might be better to mark `main` the last one
     ///    within parts created from a bigger `main` not overall last,
     ///    but it is how Kakoune does)
-    main_selection_ptr: Position,
+    main_selection_ptr: PositionRaw,
 }
 
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub(crate) fn new() -> Self {
-        let selection: Selection = Default::default();
+        let selection: SelectionRaw = Default::default();
         let from = selection.from;
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
@@ -63,7 +63,7 @@ impl SelectionStorage {
     /// If storage contains a selection which overlaps with the input
     /// they will be merged. This check is run twice: for head and for
     /// tail.
-    pub(crate) fn add_selection(&mut self, ns: Selection) {
+    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) {
         if let Some(mut s) = self.find_hit_take(ns.from) {
             if self.main_selection_ptr == ns.from {
                 self.main_selection_ptr = s.from;
@@ -84,75 +84,76 @@ impl SelectionStorage {
     }
 
     /// Finds a selection which covers input position and moves it out of the storage.
-    fn find_hit_take(&mut self, s: Position) -> Option<Selection> {
+    fn find_hit_take(&mut self, s: PositionRaw) -> Option<SelectionRaw> {
         self.selections_tree
-            .take(&Selection::from(s).into())
+            .take(&SelectionRaw::from(s).into())
             .map(|si| si.0)
     }
 
     /// Apply functions to each of selections making a new tree in place of the old one.
-    fn apply_to_selections<F, L: LineLength + Copy>(&mut self, f: F, line_length: L) -> Vec<Delta>
+    fn apply_to_selections<'a, F>(&mut self, f: F, buffer: &'a Buffer) -> Vec<Delta<'a>>
     where
-        F: Fn(Selection) -> Selection,
+        F: Fn(SelectionRaw) -> SelectionRaw,
     {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
         let mut deltas = Vec::with_capacity(selections_old.len());
         for s in selections_old {
-            let old = s.0;
-            let new = f(old.clone());
-            self.add_selection(new.clone());
+            let old: Selection = s.0.clone().binded(buffer);
+            let new_raw: SelectionRaw = f(s.0);
+            self.add_selection(new_raw.clone());
+            let new: Selection = new_raw.binded(buffer);
             deltas.push(Delta::SelectionChanged { old, new })
         }
         deltas
     }
 
     /// Swap selections' cursor.
-    pub(crate) fn swap_cursor<L: LineLength + Copy>(&mut self, line_length: L) -> Vec<Delta> {
-        self.apply_to_selections(move |s| s.swap_cursor(), line_length)
+    pub(crate) fn swap_cursor<'a>(&mut self, buffer: &'a Buffer) -> Vec<Delta<'a>> {
+        self.apply_to_selections(move |s| s.swap_cursor(), buffer)
     }
 
     /// Move left all selections.
-    pub(crate) fn move_left<L: LineLength + Copy>(
+    pub(crate) fn move_left<'a>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: L,
-    ) -> Vec<Delta> {
-        self.apply_to_selections(move |s| s.move_left(n, extend, line_length), line_length)
+        buffer: &'a Buffer,
+    ) -> Vec<Delta<'a>> {
+        self.apply_to_selections(move |s| s.move_left(n, extend, buffer.get_rope()), buffer)
     }
 
     /// Move right all selections.
-    pub(crate) fn move_right<L: LineLength + Copy>(
+    pub(crate) fn move_right<'a>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: L,
-    ) -> Vec<Delta> {
-        self.apply_to_selections(move |s| s.move_right(n, extend, line_length), line_length)
+        buffer: &'a Buffer,
+    ) -> Vec<Delta<'a>> {
+        self.apply_to_selections(move |s| s.move_right(n, extend, buffer.get_rope()), buffer)
     }
 
     /// Move up all selections.
-    pub(crate) fn move_up<L: LineLength + Copy>(
+    pub(crate) fn move_up<'a>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: L,
-    ) -> Vec<Delta> {
-        self.apply_to_selections(move |s| s.move_up(n, extend, line_length), line_length)
+        buffer: &'a Buffer,
+    ) -> Vec<Delta<'a>> {
+        self.apply_to_selections(move |s| s.move_up(n, extend, buffer.get_rope()), buffer)
     }
 
     /// Move down all selections.
-    pub(crate) fn move_down<L: LineLength + Copy>(
+    pub(crate) fn move_down<'a>(
         &mut self,
         n: usize,
         extend: bool,
-        line_length: L,
-    ) -> Vec<Delta> {
-        self.apply_to_selections(move |s| s.move_down(n, extend, line_length), line_length)
+        buffer: &'a Buffer,
+    ) -> Vec<Delta<'a>> {
+        self.apply_to_selections(move |s| s.move_down(n, extend, buffer.get_rope()), buffer)
     }
 
     /// Create an iterator
-    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = Selection> + '_ {
+    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = SelectionRaw> + '_ {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
@@ -160,7 +161,7 @@ impl SelectionStorage {
     pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
-        let (on_the_line, others): (Vec<Selection>, Vec<Selection>) = selections_old
+        let (on_the_line, others): (Vec<SelectionRaw>, Vec<SelectionRaw>) = selections_old
             .into_iter()
             .map(|x| x.0)
             .partition(|x| x.from.line == line.into() && x.from.col > after.into());
@@ -175,18 +176,22 @@ impl SelectionStorage {
 
     /// Get a left neighbour for the selection.
     /// It will be `None` if called for the first selection in the buffer.
-    pub(crate) fn get_first_before(&self, before: &Selection) -> Option<Selection> {
+    pub(crate) fn get_first_before(&self, before: &SelectionRaw) -> Option<SelectionRaw> {
         self.iter().rev().find(|s| s.to < before.from)
     }
 
     /// Get a right neighbour for the selection.
     /// It will be `None` if called for the last selection in the buffer.
-    pub(crate) fn get_first_after(&self, after: &Selection) -> Option<Selection> {
+    pub(crate) fn get_first_after(&self, after: &SelectionRaw) -> Option<SelectionRaw> {
         self.iter().find(|s| s.from > after.to)
     }
 
     /// Compute selection storage after the selection deletion.
-    pub(crate) fn apply_delete<L: LineLength>(&mut self, mut to_delete: Selection, line_length: L) {
+    pub(crate) fn apply_delete<L: LineLength>(
+        &mut self,
+        mut to_delete: SelectionRaw,
+        line_length: L,
+    ) {
         let (from, to) = to_delete.get_bounds();
         to_delete.drop_selection_to_head();
         let to_line: usize = to.line.into();
@@ -220,7 +225,7 @@ impl SelectionStorage {
         if lines_delta > 0 {
             let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
-            let (selections_after, others): (Vec<Selection>, Vec<Selection>) = selections_old
+            let (selections_after, others): (Vec<SelectionRaw>, Vec<SelectionRaw>) = selections_old
                 .into_iter()
                 .map(|x| x.0)
                 .partition(|x| x.from > to_delete.to);
@@ -260,7 +265,7 @@ impl SelectionStorage {
 
     /// Find a selection that overlaps with the input selection and replace it.
     /// Used to shrink the selection to be cursor-sized.
-    pub(crate) fn replace_selection(&mut self, to: Selection) {
+    pub(crate) fn replace_selection(&mut self, to: SelectionRaw) {
         // TODO: perhaps we need some check here to verify that a replaced
         // selection won't overlap the next one
         self.selections_tree.replace(SelectionIntersect(to));
@@ -350,13 +355,13 @@ impl SelectionStorage {
     }
 }
 
-impl From<Selection> for SelectionIntersect {
-    fn from(selection: Selection) -> Self {
+impl From<SelectionRaw> for SelectionIntersect {
+    fn from(selection: SelectionRaw) -> Self {
         SelectionIntersect(selection)
     }
 }
 
-impl From<SelectionIntersect> for Selection {
+impl From<SelectionIntersect> for SelectionRaw {
     fn from(selection_intersect: SelectionIntersect) -> Self {
         selection_intersect.0
     }
@@ -372,7 +377,7 @@ impl From<SelectionIntersect> for Selection {
 /// `BTreeSet` search and will be valid only within storage's `add_selection`
 /// implementation, which handles this case manually.
 #[derive(Debug)]
-pub(crate) struct SelectionIntersect(pub(crate) Selection);
+pub(crate) struct SelectionIntersect(pub(crate) SelectionRaw);
 
 impl Eq for SelectionIntersect {}
 
