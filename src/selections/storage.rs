@@ -6,8 +6,34 @@ use crate::{Buffer, Delta, LineLength};
 mod tests;
 
 use itertools::Itertools;
+use ropey::Rope;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+
+/// Unbinded selection deltas.
+/// Public API's Delta requires binded selections so this structure
+/// helps to postpone addition of dependency on the Buffer
+pub(crate) struct PartialSelectionDeltas {
+    selection_pairs: Vec<(SelectionRaw, SelectionRaw)>,
+}
+
+impl PartialSelectionDeltas {
+    /// Wrap selection pairs
+    pub(crate) fn new(selection_pairs: Vec<(SelectionRaw, SelectionRaw)>) -> Self {
+        Self { selection_pairs }
+    }
+
+    /// Bind partial selection deltas to the buffer
+    pub(crate) fn bind<'a>(self, buffer: &'a Buffer) -> Vec<Delta<'a>> {
+        self.selection_pairs
+            .into_iter()
+            .map(|(old, new)| Delta::SelectionChanged {
+                old: old.binded(buffer),
+                new: new.binded(buffer),
+            })
+            .collect()
+    }
+}
 
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
@@ -91,65 +117,64 @@ impl SelectionStorage {
     }
 
     /// Apply functions to each of selections making a new tree in place of the old one.
-    fn apply_to_selections<'a, F>(&mut self, f: F, buffer: &'a Buffer) -> Vec<Delta<'a>>
+    fn apply_to_selections<'a, F>(&mut self, f: F) -> PartialSelectionDeltas
     where
         F: Fn(SelectionRaw) -> SelectionRaw,
     {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-        let mut deltas = Vec::with_capacity(selections_old.len());
+        let mut delta_selection_pairs = Vec::with_capacity(selections_old.len());
         for s in selections_old {
-            let old: Selection = s.0.clone().binded(buffer);
-            let new_raw: SelectionRaw = f(s.0);
-            self.add_selection(new_raw.clone());
-            let new: Selection = new_raw.binded(buffer);
-            deltas.push(Delta::SelectionChanged { old, new })
+            let old = s.0.clone();
+            let new = f(s.0);
+            self.add_selection(new.clone());
+            delta_selection_pairs.push((old, new));
         }
-        deltas
+        PartialSelectionDeltas::new(delta_selection_pairs)
     }
 
     /// Swap selections' cursor.
-    pub(crate) fn swap_cursor<'a>(&mut self, buffer: &'a Buffer) -> Vec<Delta<'a>> {
-        self.apply_to_selections(move |s| s.swap_cursor(), buffer)
+    pub(crate) fn swap_cursor(&mut self) -> PartialSelectionDeltas {
+        self.apply_to_selections(move |s| s.swap_cursor())
     }
 
     /// Move left all selections.
-    pub(crate) fn move_left<'a>(
+    pub(crate) fn move_left(
         &mut self,
         n: usize,
         extend: bool,
-        buffer: &'a Buffer,
-    ) -> Vec<Delta<'a>> {
-        self.apply_to_selections(move |s| s.move_left(n, extend, buffer.get_rope()), buffer)
+        rope: &Rope,
+    ) -> PartialSelectionDeltas {
+        self.apply_to_selections(move |s| s.move_left(n, extend, rope))
     }
 
     /// Move right all selections.
-    pub(crate) fn move_right<'a>(
+    pub(crate) fn move_right(
         &mut self,
         n: usize,
         extend: bool,
-        buffer: &'a Buffer,
-    ) -> Vec<Delta<'a>> {
-        self.apply_to_selections(move |s| s.move_right(n, extend, buffer.get_rope()), buffer)
+        rope: &Rope,
+    ) -> PartialSelectionDeltas {
+        self.apply_to_selections(move |s| s.move_right(n, extend, rope))
     }
 
     /// Move up all selections.
-    pub(crate) fn move_up<'a>(
+    pub(crate) fn move_up(
         &mut self,
         n: usize,
         extend: bool,
-        buffer: &'a Buffer,
-    ) -> Vec<Delta<'a>> {
-        self.apply_to_selections(move |s| s.move_up(n, extend, buffer.get_rope()), buffer)
+        rope: &Rope,
+    ) -> PartialSelectionDeltas {
+        self.apply_to_selections(move |s| s.move_up(n, extend, rope))
     }
 
     /// Move down all selections.
-    pub(crate) fn move_down<'a>(
+    pub(crate) fn move_down(
         &mut self,
         n: usize,
         extend: bool,
-        buffer: &'a Buffer,
-    ) -> Vec<Delta<'a>> {
-        self.apply_to_selections(move |s| s.move_down(n, extend, buffer.get_rope()), buffer)
+        rope: &Rope,
+    ) -> PartialSelectionDeltas {
+        self.apply_to_selections(move |s| s.move_down(n, extend, rope))
     }
 
     /// Create an iterator

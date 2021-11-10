@@ -141,7 +141,7 @@ pub struct Selection<'a> {
 
 impl PartialEq for Selection<'_> {
     fn eq(&self, other: &Self) -> bool {
-        (self.buffer as *const _ == other.buffer as *const _) &&  self.selection == other.selection
+        (self.buffer as *const _ == other.buffer as *const _) && self.selection == other.selection
     }
 }
 

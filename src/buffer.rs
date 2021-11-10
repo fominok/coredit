@@ -1,4 +1,7 @@
-use crate::selections::{PositionRaw, SelectionRaw, storage::{SelectionIntersect, SelectionStorage}};
+use crate::selections::{
+    storage::{SelectionIntersect, SelectionStorage},
+    PositionRaw, SelectionRaw,
+};
 use crate::selections::{Position, Selection};
 use crate::{LineLength, Result};
 use itertools::Itertools;
@@ -77,8 +80,7 @@ impl Buffer {
 
     /// Return an iterator over selections
     pub fn selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
-        self.selection_storage
-            .iter().map(|s| s.binded(self))
+        self.selection_storage.iter().map(|s| s.binded(self))
     }
 
     /// Create Position with required context
@@ -86,14 +88,12 @@ impl Buffer {
         PositionRaw {
             line: line.into(),
             col: col.into(),
-        }.binded(self)
+        }
+        .binded(self)
     }
 
     /// Return an iterator over selections since `line`
-    pub fn selections_at(
-        &self,
-        line: usize,
-    ) -> impl Iterator<Item = Selection> + '_ {
+    pub fn selections_at(&self, line: usize) -> impl Iterator<Item = Selection> + '_ {
         let pos: SelectionIntersect = SelectionRaw::from(PositionRaw {
             line: line.into(),
             col: 1.into(),
@@ -107,31 +107,31 @@ impl Buffer {
 
     /// Swap selections' cursor position.
     pub fn swap_cursor(&mut self) {
-        self.selection_storage.swap_cursor(&self);
+        self.selection_storage.swap_cursor();
     }
 
     /// Move all cursors up by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_up(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_up(n, extend, &self);
+        self.selection_storage.move_up(n, extend, &self.rope);
     }
 
     /// Move all cursors down by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_down(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_down(n, extend, &self);
+        self.selection_storage.move_down(n, extend, &self.rope);
     }
 
     /// Move all cursors left by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_left(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_left(n, extend, &self);
+        self.selection_storage.move_left(n, extend, &self.rope);
     }
 
     /// Move all cursors right by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_right(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_right(n, extend, &self);
+        self.selection_storage.move_right(n, extend, &self.rope);
     }
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
