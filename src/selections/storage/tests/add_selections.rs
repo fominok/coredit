@@ -14,21 +14,21 @@ fn test_place_selections_under() {
     let mut storage = SelectionStorage::new();
     let mut tree = BTreeSet::new();
 
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         4,
         7,
         4,
         8,
         Default::default(),
     )));
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         4,
         76,
         4,
         77,
         Default::default(),
     )));
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         4,
         81,
         4,
@@ -37,7 +37,7 @@ fn test_place_selections_under() {
     )));
 
     storage.selections_tree = tree;
-    storage.main_selection_ptr = Position {
+    storage.main_selection_ptr = PositionRaw {
         line: 4.into(),
         col: 81.into(),
     };
@@ -45,26 +45,26 @@ fn test_place_selections_under() {
     storage.place_selection_under(&line_length);
     storage.place_selection_under(&line_length);
 
-    let selections_vec: Vec<Selection> = storage
+    let selections_vec: Vec<SelectionRaw> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
 
     let selections_reference_vec = vec![
-        Selection::new_quick(4, 7, 4, 8, Default::default()),
-        Selection::new_quick(4, 76, 4, 77, Default::default()),
-        Selection::new_quick(4, 81, 4, 82, Default::default()),
-        Selection::new_quick(5, 7, 5, 8, Default::default()),
-        Selection::new_quick(6, 7, 6, 8, Default::default()),
-        Selection::new_quick(6, 76, 6, 77, Default::default()),
-        Selection::new_quick(6, 81, 6, 82, Default::default()),
+        SelectionRaw::new_quick(4, 7, 4, 8, Default::default()),
+        SelectionRaw::new_quick(4, 76, 4, 77, Default::default()),
+        SelectionRaw::new_quick(4, 81, 4, 82, Default::default()),
+        SelectionRaw::new_quick(5, 7, 5, 8, Default::default()),
+        SelectionRaw::new_quick(6, 7, 6, 8, Default::default()),
+        SelectionRaw::new_quick(6, 76, 6, 77, Default::default()),
+        SelectionRaw::new_quick(6, 81, 6, 82, Default::default()),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
     assert_eq!(
         storage.main_selection_ptr,
-        Position {
+        PositionRaw {
             line: 6.into(),
             col: 81.into()
         }

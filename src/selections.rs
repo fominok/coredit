@@ -33,6 +33,40 @@ impl PartialOrd for Position<'_> {
     }
 }
 
+impl Position<'_> {
+    /// Returns a `line` component
+    pub fn line(&self) -> usize {
+        self.position.line.into()
+    }
+
+    /// Returns a `col` component
+    pub fn col(&self) -> usize {
+        self.position.col.into()
+    }
+
+    /// Returns a following position.
+    /// Returns `None` if called for the last possible position in
+    /// buffer.
+    pub fn successor(&self) -> Option<Self> {
+        self.position
+            .successor(self.buffer.get_rope())
+            .map(|p| p.binded(self.buffer))
+    }
+
+    /// Returns a previous position.
+    /// Returns `None` if called for the beginning of buffer.
+    pub fn predecessor(&self) -> Option<Self> {
+        self.position
+            .predecessor(self.buffer.get_rope())
+            .map(|p| p.binded(self.buffer))
+    }
+
+    /// Check if is line end (technically points at newline)
+    pub fn is_line_end(&self) -> bool {
+        self.position.is_line_end(self.buffer.get_rope())
+    }
+}
+
 /// A position in a text buffer represented by 1-based numbered
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
@@ -76,7 +110,7 @@ impl PositionRaw {
 
     /// Returns a previous position.
     /// Returns `None` if called for the beginning of buffer.
-    pub fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
+    pub(crate) fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
             if let Some(length) = line_length.line_length(self.line.get() - 1) {
                 Some(PositionRaw {
@@ -95,7 +129,7 @@ impl PositionRaw {
     }
 
     /// Check if is line end (technically points at newline)
-    pub fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
+    pub(crate) fn is_line_end<L: LineLength>(&self, line_length: L) -> bool {
         line_length
             .line_length(self.line.get())
             .map(|x| self.col.get() >= x)
@@ -147,6 +181,33 @@ impl PartialEq for Selection<'_> {
 
 impl Eq for Selection<'_> {}
 
+impl<'a> Selection<'a> {
+    /// Check if the selection's length equals to 1.
+    pub fn is_point(&self) -> bool {
+        self.selection.is_point()
+    }
+
+    /// Get cursor direction
+    pub fn cursor_direction(&self) -> CursorDirection {
+        self.selection.cursor_direction
+    }
+
+    /// Get `from` component
+    pub fn from(&self) -> Position<'a> {
+        self.selection.from.binded(self.buffer)
+    }
+
+    /// Get `to` component
+    pub fn to(&self) -> Position<'a> {
+        self.selection.to.binded(self.buffer)
+    }
+
+    /// Get `from` and `to` components as a tuple
+    pub fn bounds(&self) -> (Position<'a>, Position<'a>) {
+        (self.from(), self.to())
+    }
+}
+
 /// Selection is as pair of positions, which are pairs of line/column values with
 /// a cursor in the beginning or in the end.
 #[derive(Default, Debug, PartialEq, Clone)]
@@ -177,7 +238,7 @@ impl SelectionRaw {
     }
 
     /// Check if the selection's length equals to 1.
-    pub fn is_point(&self) -> bool {
+    pub(crate) fn is_point(&self) -> bool {
         self.from == self.to
     }
 

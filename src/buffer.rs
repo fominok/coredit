@@ -202,7 +202,7 @@ impl Buffer {
 
     /// Return an iterator over internal selections' representation
     #[cfg(test)]
-    pub(crate) fn internal_selections_iter(&self) -> impl Iterator<Item = Selection> + '_ {
+    pub(crate) fn internal_selections_iter(&self) -> impl Iterator<Item = SelectionRaw> + '_ {
         self.selection_storage.iter()
     }
 

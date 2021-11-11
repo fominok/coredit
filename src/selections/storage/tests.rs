@@ -7,21 +7,21 @@ use super::*;
 fn gen_storage() -> SelectionStorage {
     let mut storage = SelectionStorage::new();
     let mut tree = BTreeSet::new();
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         1,
         10,
         1,
         30,
         Default::default(),
     )));
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         2,
         10,
         2,
         30,
         Default::default(),
     )));
-    tree.insert(SelectionIntersect(Selection::new_quick(
+    tree.insert(SelectionIntersect(SelectionRaw::new_quick(
         3,
         10,
         5,

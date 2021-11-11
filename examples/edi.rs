@@ -13,25 +13,25 @@ fn make_style(f: (u8, u8, u8), b: (u8, u8, u8)) -> theme::ColorStyle {
 }
 
 fn position_to_char_idx(b: &Buffer, p: Position) -> usize {
-    b.get_rope().line_to_char(p.line.get() - 1) + p.col.get() - 1
+    b.get_rope().line_to_char(p.line() - 1) + p.col() - 1
 }
 
-type ColoredInterval = (Position, Position, IntervalColor);
+type ColoredInterval<'a> = (Position<'a>, Position<'a>, IntervalColor);
 
 fn selection_to_colored_interval_pair(s: Selection) -> Vec<ColoredInterval> {
     let is_point = s.is_point();
-    let cursor_direction = s.cursor_direction;
-    let Selection { from, to, .. } = s;
+    let cursor_direction = s.cursor_direction();
+    let (from, to) = s.bounds();
     if is_point {
-        vec![(to, to, IntervalColor::Cursor)]
+        vec![(to.clone(), to, IntervalColor::Cursor)]
     } else {
         match cursor_direction {
             CursorDirection::Forward => vec![
                 (from, to.predecessor().unwrap(), IntervalColor::Selection),
-                (to, to, IntervalColor::Cursor),
+                (to.clone(), to, IntervalColor::Cursor),
             ],
             CursorDirection::Backward => vec![
-                (from, from, IntervalColor::Cursor),
+                (from.clone(), from.clone(), IntervalColor::Cursor),
                 (from.successor().unwrap(), to, IntervalColor::Selection),
             ],
         }
@@ -40,8 +40,8 @@ fn selection_to_colored_interval_pair(s: Selection) -> Vec<ColoredInterval> {
 
 fn fill_missing_intervals<'a>(
     b: &'a Buffer,
-    intervals: Vec<ColoredInterval>,
-) -> Vec<ColoredInterval> {
+    intervals: Vec<ColoredInterval<'a>>,
+) -> Vec<ColoredInterval<'a>> {
     let last_pos = b.create_position(b.lines_count(), b.line_length(b.lines_count()).unwrap());
     let mut previous_pos = Some(b.create_position(1, 1));
     let mut result = vec![];
@@ -52,7 +52,7 @@ fn fill_missing_intervals<'a>(
                 result.push((pos, int.0.predecessor().unwrap(), IntervalColor::Uncolored));
             }
             previous_pos = int.1.successor();
-            result.push(*int);
+            result.push(int.clone());
         } else {
             break;
         }
@@ -67,16 +67,16 @@ fn fill_missing_intervals<'a>(
 
 fn split_intervals_by_lines<'a>(
     b: &'a Buffer,
-    intervals: Vec<ColoredInterval>,
-) -> Vec<ColoredInterval> {
+    intervals: Vec<ColoredInterval<'a>>,
+) -> Vec<ColoredInterval<'a>> {
     let mut result = vec![];
     for int in intervals.iter() {
         if int.0.line() == int.1.line() {
-            result.push(*int);
+            result.push(int.clone());
         } else {
             // Put first possibly non-full line
             result.push((
-                int.0,
+                int.0.clone(),
                 b.create_position(int.0.line(), b.line_length(int.0.line()).unwrap()),
                 int.2,
             ));
@@ -93,7 +93,7 @@ fn split_intervals_by_lines<'a>(
             }
 
             // Put the last possibly non-full line
-            result.push((b.create_position(int.1.line(), 1), int.1, int.2));
+            result.push((b.create_position(int.1.line(), 1), int.1.clone(), int.2));
         }
     }
     result
@@ -152,7 +152,7 @@ impl View for KeyCodeView {
                 .buffer
                 .get_rope()
                 .slice(
-                    position_to_char_idx(&self.buffer, from)
+                    position_to_char_idx(&self.buffer, from.clone())
                         ..=position_to_char_idx(&self.buffer, to) - if ends_on_nl { 1 } else { 0 },
                 )
                 .to_string();

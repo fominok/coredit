@@ -1,12 +1,11 @@
 //! Selections storage API with an implementation respecting multiple selections
 //! interaction.
-use super::{CursorDirection, Position, PositionRaw, Selection, SelectionRaw};
+use super::{CursorDirection, PositionRaw, SelectionRaw};
 use crate::{Buffer, Delta, LineLength};
 #[cfg(test)]
 mod tests;
 
 use itertools::Itertools;
-use ropey::Rope;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
@@ -142,9 +141,9 @@ impl SelectionStorage {
         &mut self,
         n: usize,
         extend: bool,
-        rope: &Rope,
+        line_length: &impl LineLength,
     ) -> PartialSelectionDeltas {
-        self.apply_to_selections(move |s| s.move_left(n, extend, rope))
+        self.apply_to_selections(move |s| s.move_left(n, extend, line_length))
     }
 
     /// Move right all selections.
@@ -152,9 +151,9 @@ impl SelectionStorage {
         &mut self,
         n: usize,
         extend: bool,
-        rope: &Rope,
+        line_length: &impl LineLength,
     ) -> PartialSelectionDeltas {
-        self.apply_to_selections(move |s| s.move_right(n, extend, rope))
+        self.apply_to_selections(move |s| s.move_right(n, extend, line_length))
     }
 
     /// Move up all selections.
@@ -162,9 +161,9 @@ impl SelectionStorage {
         &mut self,
         n: usize,
         extend: bool,
-        rope: &Rope,
+        line_length: &impl LineLength,
     ) -> PartialSelectionDeltas {
-        self.apply_to_selections(move |s| s.move_up(n, extend, rope))
+        self.apply_to_selections(move |s| s.move_up(n, extend, line_length))
     }
 
     /// Move down all selections.
@@ -172,9 +171,9 @@ impl SelectionStorage {
         &mut self,
         n: usize,
         extend: bool,
-        rope: &Rope,
+        line_length: &impl LineLength,
     ) -> PartialSelectionDeltas {
-        self.apply_to_selections(move |s| s.move_down(n, extend, rope))
+        self.apply_to_selections(move |s| s.move_down(n, extend, line_length))
     }
 
     /// Create an iterator
@@ -205,11 +204,11 @@ impl SelectionStorage {
         self.iter().rev().find(|s| s.to < before.from)
     }
 
-    /// Get a right neighbour for the selection.
-    /// It will be `None` if called for the last selection in the buffer.
-    pub(crate) fn get_first_after(&self, after: &SelectionRaw) -> Option<SelectionRaw> {
-        self.iter().find(|s| s.from > after.to)
-    }
+    // /// Get a right neighbour for the selection.
+    // /// It will be `None` if called for the last selection in the buffer.
+    // pub(crate) fn get_first_after(&self, after: &SelectionRaw) -> Option<SelectionRaw> {
+    //     self.iter().find(|s| s.from > after.to)
+    // }
 
     /// Compute selection storage after the selection deletion.
     pub(crate) fn apply_delete<L: LineLength>(
@@ -351,9 +350,9 @@ impl SelectionStorage {
     // Test related stuff:
 
     #[cfg(test)]
-    fn find_hit(&self, s: Position) -> Option<&Selection> {
+    fn find_hit(&self, s: PositionRaw) -> Option<&SelectionRaw> {
         self.selections_tree
-            .get(&Selection::from(s).into())
+            .get(&SelectionRaw::from(s).into())
             .map(|si| &si.0)
     }
 
@@ -362,7 +361,7 @@ impl SelectionStorage {
         let mut storage = SelectionStorage::new();
         let mut tree = BTreeSet::new();
         for s in selections {
-            tree.insert(SelectionIntersect(Selection::new_quick(
+            tree.insert(SelectionIntersect(SelectionRaw::new_quick(
                 s.0,
                 s.1,
                 s.2,
@@ -438,8 +437,9 @@ impl Ord for SelectionIntersect {
 #[cfg(test)]
 impl PartialEq for SelectionStorage {
     fn eq(&self, rhs: &Self) -> bool {
-        let self_vec: Vec<Selection> = self.selections_tree.iter().map(|x| x.0.clone()).collect();
-        let rhs_vec: Vec<Selection> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
+        let self_vec: Vec<SelectionRaw> =
+            self.selections_tree.iter().map(|x| x.0.clone()).collect();
+        let rhs_vec: Vec<SelectionRaw> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
         self_vec == rhs_vec
     }
 }
