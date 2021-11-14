@@ -1,8 +1,11 @@
-use crate::selections::{
-    storage::{SelectionIntersect, SelectionStorage},
-    PositionRaw, SelectionRaw,
-};
 use crate::selections::{Position, Selection};
+use crate::{
+    selections::{
+        storage::{SelectionIntersect, SelectionStorage},
+        PositionRaw, SelectionRaw,
+    },
+    Delta,
+};
 use crate::{LineLength, Result};
 use itertools::Itertools;
 use ropey::Rope;
@@ -106,38 +109,46 @@ impl Buffer {
     }
 
     /// Swap selections' cursor position.
-    pub fn swap_cursor(&mut self) {
-        self.selection_storage.swap_cursor();
+    pub fn swap_cursor(&mut self) -> Vec<Delta> {
+        self.selection_storage.swap_cursor().bind(self)
     }
 
     /// Move all cursors up by `n`, shrinking selections to length 1
     /// if `extend` is not set.
-    pub fn move_up(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_up(n, extend, &self.rope);
+    pub fn move_up(&mut self, n: usize, extend: bool) -> Vec<Delta> {
+        self.selection_storage
+            .move_up(n, extend, &self.rope)
+            .bind(self)
     }
 
     /// Move all cursors down by `n`, shrinking selections to length 1
     /// if `extend` is not set.
-    pub fn move_down(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_down(n, extend, &self.rope);
+    pub fn move_down(&mut self, n: usize, extend: bool) -> Vec<Delta> {
+        self.selection_storage
+            .move_down(n, extend, &self.rope)
+            .bind(self)
     }
 
     /// Move all cursors left by `n`, shrinking selections to length 1
     /// if `extend` is not set.
-    pub fn move_left(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_left(n, extend, &self.rope);
+    pub fn move_left(&mut self, n: usize, extend: bool) -> Vec<Delta> {
+        self.selection_storage
+            .move_left(n, extend, &self.rope)
+            .bind(self)
     }
 
     /// Move all cursors right by `n`, shrinking selections to length 1
     /// if `extend` is not set.
-    pub fn move_right(&mut self, n: usize, extend: bool) {
-        self.selection_storage.move_right(n, extend, &self.rope);
+    pub fn move_right(&mut self, n: usize, extend: bool) -> Vec<Delta> {
+        self.selection_storage
+            .move_right(n, extend, &self.rope)
+            .bind(self)
     }
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
-    pub fn place_selection_under(&mut self) {
-        self.selection_storage.place_selection_under(&self.rope);
+    pub fn place_selection_under(&mut self) -> Vec<Delta> {
+        self.selection_storage.place_selection_under(&self.rope)(self)
     }
 
     /// Insert `text` on all cursors.

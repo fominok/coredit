@@ -274,16 +274,30 @@ impl SelectionStorage {
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
-    pub(crate) fn place_selection_under<L: LineLength + Clone>(&mut self, line_length: L) {
+    pub(crate) fn place_selection_under<L: LineLength + Clone>(
+        &mut self,
+        line_length: L,
+    ) -> impl FnOnce(&Buffer) -> Vec<Delta> {
+        let mut new_selections = Vec::new();
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
         for s in selections_old.into_iter().map(|x| x.0) {
             if let Some(selection_under) = s.create_selection_under(line_length.clone()) {
                 if self.main_selection_ptr == s.from {
                     self.main_selection_ptr = selection_under.from;
+                    // TODO: Delta for changed main selection
                 }
-                self.add_selection(selection_under);
+                self.add_selection(selection_under.clone());
+                new_selections.push(selection_under);
             }
             self.add_selection(s);
+        }
+        move |buffer| {
+            new_selections
+                .into_iter()
+                .map(|s| Delta::SelectionAdded {
+                    selection: s.binded(buffer),
+                })
+                .collect()
         }
     }
 

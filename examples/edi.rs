@@ -173,13 +173,24 @@ impl View for KeyCodeView {
     }
 
     fn on_event(&mut self, e: Event) -> EventResult {
+        // TODO: use Deltas for a smooth redraw
         match e {
             Event::Key(k) => match k {
-                event::Key::Left => self.buffer.move_left(1, false),
-                event::Key::Right => self.buffer.move_right(1, false),
-                event::Key::Up => self.buffer.move_up(1, false),
-                event::Key::Down => self.buffer.move_down(1, false),
-                event::Key::Del => self.buffer.delete(),
+                event::Key::Left => {
+                    self.buffer.move_left(1, false);
+                }
+                event::Key::Right => {
+                    self.buffer.move_right(1, false);
+                }
+                event::Key::Up => {
+                    self.buffer.move_up(1, false);
+                }
+                event::Key::Down => {
+                    self.buffer.move_down(1, false);
+                }
+                event::Key::Del => {
+                    self.buffer.delete();
+                }
                 event::Key::Backspace => {
                     self.buffer.delete();
                     self.buffer.move_left(1, false);
@@ -187,14 +198,24 @@ impl View for KeyCodeView {
                 _ => {}
             },
             Event::Shift(k) => match k {
-                event::Key::Left => self.buffer.move_left(1, true),
-                event::Key::Right => self.buffer.move_right(1, true),
-                event::Key::Up => self.buffer.move_up(1, true),
-                event::Key::Down => self.buffer.move_down(1, true),
+                event::Key::Left => {
+                    self.buffer.move_left(1, true);
+                }
+                event::Key::Right => {
+                    self.buffer.move_right(1, true);
+                }
+                event::Key::Up => {
+                    self.buffer.move_up(1, true);
+                }
+                event::Key::Down => {
+                    self.buffer.move_down(1, true);
+                }
                 _ => {}
             },
             Event::AltChar(c) => match c {
-                'c' => self.buffer.place_selection_under(),
+                'c' => {
+                    self.buffer.place_selection_under();
+                }
                 _ => {}
             },
             Event::Char(c) => self.buffer.insert(&c.to_string()),
