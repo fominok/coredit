@@ -49,6 +49,7 @@ impl<T: LineLength + ?Sized> LineLength for &T {
 
 /// Buffer's feedback for optimal redraws or any other case when full buffer
 /// contents not needed
+#[derive(Debug, PartialEq)]
 pub enum Delta<'a> {
     /// A selection identifiable by `old` moved into `new` state
     SelectionChanged {
@@ -62,13 +63,39 @@ pub enum Delta<'a> {
         /// New selection
         selection: Selection<'a>,
     },
+    /// Selection was deleted
+    SelectionDeleted {
+        /// Deleted selection info
+        selection: Selection<'a>,
+    },
     /// Line's contents changed
     LineChanged {
         /// Line index
         idx: usize,
         /// Line new content
         content: &'a str,
+        /// Buffer link
+        buffer: &'a Buffer,
     },
+}
+
+impl<'a> Delta<'a> {
+    /// Get the linked buffer reference
+    pub fn buffer(&self) -> &'a Buffer {
+        match self {
+            Delta::SelectionChanged {
+                old: Selection { buffer, .. },
+                ..
+            } => buffer,
+            Delta::SelectionAdded {
+                selection: Selection { buffer, .. },
+            } => buffer,
+            Delta::SelectionDeleted {
+                selection: Selection { buffer, .. },
+            } => buffer,
+            Delta::LineChanged { buffer, .. } => buffer,
+        }
+    }
 }
 
 #[cfg(test)]

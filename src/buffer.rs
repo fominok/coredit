@@ -24,10 +24,17 @@ pub struct Buffer {
     selection_storage: SelectionStorage,
 }
 
+#[cfg(not(test))]
+impl PartialEq for Buffer {
+    fn eq(&self, rhs: &Self) -> bool {
+        self as *const _ == rhs as *const _
+    }
+}
+
 #[cfg(test)]
 impl PartialEq for Buffer {
     fn eq(&self, rhs: &Self) -> bool {
-        (self.rope == rhs.rope) && (self.selection_storage == rhs.selection_storage)
+        self.rope == rhs.rope
     }
 }
 

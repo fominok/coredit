@@ -1,5 +1,5 @@
 use super::*;
-use crate::selections::{CursorDirection, Selection, SelectionRaw};
+use crate::selections::{CursorDirection, SelectionRaw};
 use pretty_assertions::assert_eq;
 
 #[test]

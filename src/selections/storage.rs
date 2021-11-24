@@ -88,7 +88,8 @@ impl SelectionStorage {
     /// If storage contains a selection which overlaps with the input
     /// they will be merged. This check is run twice: for head and for
     /// tail.
-    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) {
+    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) -> PartialSelectionDeltas {
+        let mut deltas = Vec::new();
         if let Some(mut s) = self.find_hit_take(ns.from) {
             if self.main_selection_ptr == ns.from {
                 self.main_selection_ptr = s.from;
@@ -105,7 +106,11 @@ impl SelectionStorage {
             self.add_selection(s);
         } else {
             self.selections_tree.insert(ns.into());
+            PartialSelectionDeltas {
+                selection_pairs: Vec<>
+            }
         }
+        deltas
     }
 
     /// Finds a selection which covers input position and moves it out of the storage.
