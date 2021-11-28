@@ -26,10 +26,12 @@ impl PartialSelectionDeltas {
     pub(crate) fn bind<'a>(self, buffer: &'a Buffer) -> Vec<Delta<'a>> {
         self.selection_pairs
             .into_iter()
-            .map(|(old, new)| Delta::SelectionChanged {
-                old: old.binded(buffer),
-                new: new.binded(buffer),
-            })
+            .map(
+                |(old, new)| todo!(), // Delta::SelectionChanged {
+                                      //     old: old.binded(buffer),
+                                      //     new: new.binded(buffer),
+                                      // }
+            )
             .collect()
     }
 }
@@ -88,8 +90,7 @@ impl SelectionStorage {
     /// If storage contains a selection which overlaps with the input
     /// they will be merged. This check is run twice: for head and for
     /// tail.
-    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) -> PartialSelectionDeltas {
-        let mut deltas = Vec::new();
+    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) -> ! {
         if let Some(mut s) = self.find_hit_take(ns.from) {
             if self.main_selection_ptr == ns.from {
                 self.main_selection_ptr = s.from;
@@ -106,11 +107,8 @@ impl SelectionStorage {
             self.add_selection(s);
         } else {
             self.selections_tree.insert(ns.into());
-            PartialSelectionDeltas {
-                selection_pairs: Vec<>
-            }
         }
-        deltas
+        todo!()
     }
 
     /// Finds a selection which covers input position and moves it out of the storage.
@@ -299,9 +297,11 @@ impl SelectionStorage {
         move |buffer| {
             new_selections
                 .into_iter()
-                .map(|s| Delta::SelectionAdded {
-                    selection: s.binded(buffer),
-                })
+                .map(
+                    |s| todo!(), //  Delta::SelectionAdded {
+                                 //     selection: s.binded(buffer),
+                                 // }
+                )
                 .collect()
         }
     }

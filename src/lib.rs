@@ -1,11 +1,12 @@
 //! Crate providing `Buffer`: core part of your text editor
-#![deny(missing_docs)]
+// #![deny(missing_docs)]
 mod buffer;
 mod selections;
 mod util;
 pub use buffer::Buffer;
 pub use ropey::Rope;
 pub use selections::CursorDirection;
+use selections::{PositionRaw, SelectionRaw};
 pub use selections::{Position, Selection};
 use std::io;
 
@@ -50,23 +51,27 @@ impl<T: LineLength + ?Sized> LineLength for &T {
 /// Buffer's feedback for optimal redraws or any other case when full buffer
 /// contents not needed
 #[derive(Debug, PartialEq)]
-pub enum Delta<'a> {
+pub struct Delta<'a> {
+    buffer: &'a Buffer,
+    delta_type: DeltaType<'a>,
+}
+
+#[derive(Debug, PartialEq)]
+enum DeltaType<'a> {
     /// A selection identifiable by `old` moved into `new` state
     SelectionChanged {
-        /// Old selection state
-        old: Selection<'a>,
-        /// New selection state
-        new: Selection<'a>,
+        identity: PositionRaw,
+        new_state: SelectionRaw,
     },
     /// New selection added
     SelectionAdded {
         /// New selection
-        selection: Selection<'a>,
+        selection: SelectionRaw,
     },
     /// Selection was deleted
     SelectionDeleted {
         /// Deleted selection info
-        selection: Selection<'a>,
+        identity: PositionRaw,
     },
     /// Line's contents changed
     LineChanged {
@@ -74,28 +79,7 @@ pub enum Delta<'a> {
         idx: usize,
         /// Line new content
         content: &'a str,
-        /// Buffer link
-        buffer: &'a Buffer,
     },
-}
-
-impl<'a> Delta<'a> {
-    /// Get the linked buffer reference
-    pub fn buffer(&self) -> &'a Buffer {
-        match self {
-            Delta::SelectionChanged {
-                old: Selection { buffer, .. },
-                ..
-            } => buffer,
-            Delta::SelectionAdded {
-                selection: Selection { buffer, .. },
-            } => buffer,
-            Delta::SelectionDeleted {
-                selection: Selection { buffer, .. },
-            } => buffer,
-            Delta::LineChanged { buffer, .. } => buffer,
-        }
-    }
 }
 
 #[cfg(test)]
