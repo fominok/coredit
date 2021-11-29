@@ -1,12 +1,12 @@
 use super::*;
-use crate::{selections::SelectionRaw, Delta};
+use crate::{selections::SelectionUnbound, Delta};
 use itertools::izip;
 use pretty_assertions::assert_eq;
 
 fn assert_selections_changed(
     deltas: Vec<Delta>,
-    selections_before: Vec<SelectionRaw>,
-    selections_after: Vec<SelectionRaw>,
+    selections_before: Vec<SelectionUnbound>,
+    selections_after: Vec<SelectionUnbound>,
 ) {
     let buffer = deltas[0].buffer();
     assert!(deltas.len() == selections_before.len() && deltas.len() == selections_after.len());
@@ -29,10 +29,10 @@ fn assert_selections_changed(
 fn test_selection_changed_deltas() {
     let mut buffer = load_buffer();
     // It should be raw as buffer will be modified next
-    let selections_before: Vec<SelectionRaw> =
+    let selections_before: Vec<SelectionUnbound> =
         buffer.selections_iter().map(|s| s.selection).collect();
     let deltas = { buffer.move_right(30, false) };
-    let selections_after: Vec<SelectionRaw> = deltas[0]
+    let selections_after: Vec<SelectionUnbound> = deltas[0]
         .buffer()
         .selections_iter()
         .map(|s| s.selection)

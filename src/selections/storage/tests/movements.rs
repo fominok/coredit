@@ -16,15 +16,15 @@ fn test_move_left_no_intersections() {
 
     storage.move_left(10, false, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(1, 20, 1, 20, Default::default()),
-        SelectionRaw::new_quick(2, 20, 2, 20, Default::default()),
-        SelectionRaw::new_quick(5, 120, 5, 120, Default::default()),
+        SelectionUnbound::new_quick(1, 20, 1, 20, Default::default()),
+        SelectionUnbound::new_quick(2, 20, 2, 20, Default::default()),
+        SelectionUnbound::new_quick(5, 120, 5, 120, Default::default()),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
@@ -42,15 +42,15 @@ fn test_move_right_no_intersections() {
 
     storage.move_right(10, false, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(1, 40, 1, 40, Default::default()),
-        SelectionRaw::new_quick(2, 40, 2, 40, Default::default()),
-        SelectionRaw::new_quick(5, 140, 5, 140, Default::default()),
+        SelectionUnbound::new_quick(1, 40, 1, 40, Default::default()),
+        SelectionUnbound::new_quick(2, 40, 2, 40, Default::default()),
+        SelectionUnbound::new_quick(5, 140, 5, 140, Default::default()),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
@@ -69,15 +69,15 @@ fn test_move_down_no_intersections() {
 
     storage.move_down(1, false, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(2, 30, 2, 30, Default::default()),
-        SelectionRaw::new_quick(3, 30, 3, 30, Default::default()),
-        SelectionRaw::new_quick(6, 130, 6, 130, Default::default()),
+        SelectionUnbound::new_quick(2, 30, 2, 30, Default::default()),
+        SelectionUnbound::new_quick(3, 30, 3, 30, Default::default()),
+        SelectionUnbound::new_quick(6, 130, 6, 130, Default::default()),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
@@ -100,15 +100,15 @@ fn test_move_up_no_intersections() {
 
     storage.move_up(2, false, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(2, 30, 2, 30, Default::default()),
-        SelectionRaw::new_quick(3, 30, 3, 30, Default::default()),
-        SelectionRaw::new_quick(6, 130, 6, 130, Default::default()),
+        SelectionUnbound::new_quick(2, 30, 2, 30, Default::default()),
+        SelectionUnbound::new_quick(3, 30, 3, 30, Default::default()),
+        SelectionUnbound::new_quick(6, 130, 6, 130, Default::default()),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
@@ -126,26 +126,26 @@ fn test_move_left_intersection() {
     storage.move_left(12, true, &line_length);
 
     // They are right one after another but not intersected yet
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(1, 1, 1, 3, CursorDirection::Backward),
-        SelectionRaw::new_quick(1, 4, 2, 5, CursorDirection::Backward),
+        SelectionUnbound::new_quick(1, 1, 1, 3, CursorDirection::Backward),
+        SelectionUnbound::new_quick(1, 4, 2, 5, CursorDirection::Backward),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
 
     // And move a little more
     storage.move_left(1, true, &line_length);
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .into_iter()
         .map(|x| x.into())
         .collect();
-    let selections_reference_vec = vec![SelectionRaw::new_quick(
+    let selections_reference_vec = vec![SelectionUnbound::new_quick(
         1,
         1,
         2,
@@ -167,12 +167,12 @@ fn test_move_right_intersection() {
 
     storage.move_right(9, true, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
-    let selections_reference_vec = vec![SelectionRaw::new_quick(
+    let selections_reference_vec = vec![SelectionUnbound::new_quick(
         1,
         3,
         3,
@@ -194,12 +194,12 @@ fn test_move_down_intersection() {
 
     storage.move_down(9, true, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
-    let selections_reference_vec = vec![SelectionRaw::new_quick(
+    let selections_reference_vec = vec![SelectionUnbound::new_quick(
         1,
         3,
         3,
@@ -222,27 +222,27 @@ fn test_move_up_intersection() {
 
     storage.move_up(1, true, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
     let selections_reference_vec = vec![
-        SelectionRaw::new_quick(2, 5, 3, 3, CursorDirection::Backward),
-        SelectionRaw::new_quick(3, 7, 4, 5, CursorDirection::Backward),
+        SelectionUnbound::new_quick(2, 5, 3, 3, CursorDirection::Backward),
+        SelectionUnbound::new_quick(3, 7, 4, 5, CursorDirection::Backward),
     ];
 
     assert_eq!(selections_vec, selections_reference_vec);
 
     storage.move_up(1, true, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
 
-    let selections_reference_vec = vec![SelectionRaw::new_quick(
+    let selections_reference_vec = vec![SelectionUnbound::new_quick(
         1,
         5,
         4,
@@ -265,12 +265,12 @@ fn test_move_up_intersection_sticky() {
 
     storage.move_up(1, true, &line_length);
 
-    let selections_vec: Vec<SelectionRaw> = storage
+    let selections_vec: Vec<SelectionUnbound> = storage
         .selections_tree
         .iter()
         .map(|x| x.0.clone())
         .collect();
-    let selections_reference_vec = vec![SelectionRaw::new_quick(
+    let selections_reference_vec = vec![SelectionUnbound::new_quick(
         1,
         2,
         3,

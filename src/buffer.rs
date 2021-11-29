@@ -1,10 +1,13 @@
-use crate::selections::{Position, Selection};
 use crate::{
     selections::{
         storage::{SelectionIntersect, SelectionStorage},
-        PositionRaw, SelectionRaw,
+        PositionUnbound, SelectionUnbound,
     },
     Delta,
+};
+use crate::{
+    selections::{Position, Selection},
+    DeltaType,
 };
 use crate::{LineLength, Result};
 use itertools::Itertools;
@@ -95,7 +98,7 @@ impl Buffer {
 
     /// Create Position with required context
     pub fn create_position(&self, line: usize, col: usize) -> Position {
-        PositionRaw {
+        PositionUnbound {
             line: line.into(),
             col: col.into(),
         }
@@ -104,7 +107,7 @@ impl Buffer {
 
     /// Return an iterator over selections since `line`
     pub fn selections_at(&self, line: usize) -> impl Iterator<Item = Selection> + '_ {
-        let pos: SelectionIntersect = SelectionRaw::from(PositionRaw {
+        let pos: SelectionIntersect = SelectionUnbound::from(PositionUnbound {
             line: line.into(),
             col: 1.into(),
         })
@@ -117,45 +120,49 @@ impl Buffer {
 
     /// Swap selections' cursor position.
     pub fn swap_cursor(&mut self) -> Vec<Delta> {
-        self.selection_storage.swap_cursor().bind(self)
+        DeltaType::bind_vec(self.selection_storage.swap_cursor(), self)
     }
 
     /// Move all cursors up by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_up(&mut self, n: usize, extend: bool) -> Vec<Delta> {
-        self.selection_storage
-            .move_up(n, extend, &self.rope)
-            .bind(self)
+        DeltaType::bind_vec(self.selection_storage.move_up(n, extend, &self.rope), self)
     }
 
     /// Move all cursors down by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_down(&mut self, n: usize, extend: bool) -> Vec<Delta> {
-        self.selection_storage
-            .move_down(n, extend, &self.rope)
-            .bind(self)
+        DeltaType::bind_vec(
+            self.selection_storage.move_down(n, extend, &self.rope),
+            self,
+        )
     }
 
     /// Move all cursors left by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_left(&mut self, n: usize, extend: bool) -> Vec<Delta> {
-        self.selection_storage
-            .move_left(n, extend, &self.rope)
-            .bind(self)
+        DeltaType::bind_vec(
+            self.selection_storage.move_left(n, extend, &self.rope),
+            self,
+        )
     }
 
     /// Move all cursors right by `n`, shrinking selections to length 1
     /// if `extend` is not set.
     pub fn move_right(&mut self, n: usize, extend: bool) -> Vec<Delta> {
-        self.selection_storage
-            .move_right(n, extend, &self.rope)
-            .bind(self)
+        DeltaType::bind_vec(
+            self.selection_storage.move_right(n, extend, &self.rope),
+            self,
+        )
     }
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
     pub fn place_selection_under(&mut self) -> Vec<Delta> {
-        self.selection_storage.place_selection_under(&self.rope)(self)
+        DeltaType::bind_vec(
+            self.selection_storage.place_selection_under(&self.rope),
+            self,
+        )
     }
 
     /// Insert `text` on all cursors.
@@ -220,7 +227,7 @@ impl Buffer {
 
     /// Return an iterator over internal selections' representation
     #[cfg(test)]
-    pub(crate) fn internal_selections_iter(&self) -> impl Iterator<Item = SelectionRaw> + '_ {
+    pub(crate) fn internal_selections_iter(&self) -> impl Iterator<Item = SelectionUnbound> + '_ {
         self.selection_storage.iter()
     }
 

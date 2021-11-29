@@ -1,40 +1,13 @@
 //! Selections storage API with an implementation respecting multiple selections
 //! interaction.
-use super::{CursorDirection, PositionRaw, SelectionRaw};
-use crate::{Buffer, Delta, LineLength};
+use super::{CursorDirection, PositionUnbound, SelectionUnbound};
+use crate::{DeltaType, LineLength};
 #[cfg(test)]
 mod tests;
 
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-
-/// Unbinded selection deltas.
-/// Public API's Delta requires binded selections so this structure
-/// helps to postpone addition of dependency on the Buffer
-pub(crate) struct PartialSelectionDeltas {
-    selection_pairs: Vec<(SelectionRaw, SelectionRaw)>,
-}
-
-impl PartialSelectionDeltas {
-    /// Wrap selection pairs
-    pub(crate) fn new(selection_pairs: Vec<(SelectionRaw, SelectionRaw)>) -> Self {
-        Self { selection_pairs }
-    }
-
-    /// Bind partial selection deltas to the buffer
-    pub(crate) fn bind<'a>(self, buffer: &'a Buffer) -> Vec<Delta<'a>> {
-        self.selection_pairs
-            .into_iter()
-            .map(
-                |(old, new)| todo!(), // Delta::SelectionChanged {
-                                      //     old: old.binded(buffer),
-                                      //     new: new.binded(buffer),
-                                      // }
-            )
-            .collect()
-    }
-}
 
 /// As selections within the buffer are not independent
 /// (can be merged, for instance) this structure is aimed
@@ -69,13 +42,13 @@ pub(crate) struct SelectionStorage {
     ///    it sounds as it might be better to mark `main` the last one
     ///    within parts created from a bigger `main` not overall last,
     ///    but it is how Kakoune does)
-    main_selection_ptr: PositionRaw,
+    main_selection_ptr: PositionUnbound,
 }
 
 impl SelectionStorage {
     /// For a fresh buffer there is only one selection in the beginning of it
     pub(crate) fn new() -> Self {
-        let selection: SelectionRaw = Default::default();
+        let selection: SelectionUnbound = Default::default();
         let from = selection.from;
         let mut tree = BTreeSet::new();
         tree.insert(SelectionIntersect(selection));
@@ -90,7 +63,10 @@ impl SelectionStorage {
     /// If storage contains a selection which overlaps with the input
     /// they will be merged. This check is run twice: for head and for
     /// tail.
-    pub(crate) fn add_selection(&mut self, ns: SelectionRaw) -> ! {
+    pub(crate) fn add_selection<'a, 'b: 'a>(
+        &'a mut self,
+        ns: SelectionUnbound,
+    ) -> Vec<DeltaType<'b>> {
         if let Some(mut s) = self.find_hit_take(ns.from) {
             if self.main_selection_ptr == ns.from {
                 self.main_selection_ptr = s.from;
@@ -112,75 +88,73 @@ impl SelectionStorage {
     }
 
     /// Finds a selection which covers input position and moves it out of the storage.
-    fn find_hit_take(&mut self, s: PositionRaw) -> Option<SelectionRaw> {
+    fn find_hit_take(&mut self, s: PositionUnbound) -> Option<SelectionUnbound> {
         self.selections_tree
-            .take(&SelectionRaw::from(s).into())
+            .take(&SelectionUnbound::from(s).into())
             .map(|si| si.0)
     }
 
     /// Apply functions to each of selections making a new tree in place of the old one.
-    fn apply_to_selections<'a, F>(&mut self, f: F) -> PartialSelectionDeltas
+    fn apply_to_selections<'a, 'b: 'a, F>(&'a mut self, f: F) -> Vec<DeltaType<'b>>
     where
-        F: Fn(SelectionRaw) -> SelectionRaw,
+        F: Fn(SelectionUnbound) -> SelectionUnbound,
     {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
-        let mut delta_selection_pairs = Vec::with_capacity(selections_old.len());
+        let mut unbound_deltas = Vec::with_capacity(selections_old.len());
         for s in selections_old {
-            let old = s.0.clone();
             let new = f(s.0);
-            self.add_selection(new.clone());
-            delta_selection_pairs.push((old, new));
+            unbound_deltas.extend(self.add_selection(new));
         }
-        PartialSelectionDeltas::new(delta_selection_pairs)
+        unbound_deltas
     }
 
     /// Swap selections' cursor.
-    pub(crate) fn swap_cursor(&mut self) -> PartialSelectionDeltas {
+    pub(crate) fn swap_cursor<'a, 'b: 'a>(&'a mut self) -> Vec<DeltaType<'b>> {
         self.apply_to_selections(move |s| s.swap_cursor())
     }
 
     /// Move left all selections.
-    pub(crate) fn move_left(
-        &mut self,
+    pub(crate) fn move_left<'a, 'b: 'a>(
+        &'a mut self,
         n: usize,
         extend: bool,
         line_length: &impl LineLength,
-    ) -> PartialSelectionDeltas {
+    ) -> Vec<DeltaType<'b>> {
         self.apply_to_selections(move |s| s.move_left(n, extend, line_length))
     }
 
     /// Move right all selections.
-    pub(crate) fn move_right(
-        &mut self,
+    pub(crate) fn move_right<'a, 'b: 'a>(
+        &'a mut self,
         n: usize,
         extend: bool,
         line_length: &impl LineLength,
-    ) -> PartialSelectionDeltas {
+    ) -> Vec<DeltaType<'b>> {
         self.apply_to_selections(move |s| s.move_right(n, extend, line_length))
     }
 
     /// Move up all selections.
-    pub(crate) fn move_up(
-        &mut self,
+    pub(crate) fn move_up<'a, 'b: 'a>(
+        &'a mut self,
         n: usize,
         extend: bool,
         line_length: &impl LineLength,
-    ) -> PartialSelectionDeltas {
+    ) -> Vec<DeltaType<'b>> {
         self.apply_to_selections(move |s| s.move_up(n, extend, line_length))
     }
 
     /// Move down all selections.
-    pub(crate) fn move_down(
-        &mut self,
+    pub(crate) fn move_down<'a, 'b: 'a>(
+        &'a mut self,
         n: usize,
         extend: bool,
         line_length: &impl LineLength,
-    ) -> PartialSelectionDeltas {
+    ) -> Vec<DeltaType<'b>> {
         self.apply_to_selections(move |s| s.move_down(n, extend, line_length))
     }
 
     /// Create an iterator
-    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = SelectionRaw> + '_ {
+    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = SelectionUnbound> + '_ {
         self.selections_tree.iter().map(|x| x.0.clone())
     }
 
@@ -188,7 +162,7 @@ impl SelectionStorage {
     pub(crate) fn move_left_on_line(&mut self, line: usize, after: usize, n: usize) {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
-        let (on_the_line, others): (Vec<SelectionRaw>, Vec<SelectionRaw>) = selections_old
+        let (on_the_line, others): (Vec<SelectionUnbound>, Vec<SelectionUnbound>) = selections_old
             .into_iter()
             .map(|x| x.0)
             .partition(|x| x.from.line == line.into() && x.from.col > after.into());
@@ -203,7 +177,7 @@ impl SelectionStorage {
 
     /// Get a left neighbour for the selection.
     /// It will be `None` if called for the first selection in the buffer.
-    pub(crate) fn get_first_before(&self, before: &SelectionRaw) -> Option<SelectionRaw> {
+    pub(crate) fn get_first_before(&self, before: &SelectionUnbound) -> Option<SelectionUnbound> {
         self.iter().rev().find(|s| s.to < before.from)
     }
 
@@ -216,7 +190,7 @@ impl SelectionStorage {
     /// Compute selection storage after the selection deletion.
     pub(crate) fn apply_delete<L: LineLength>(
         &mut self,
-        mut to_delete: SelectionRaw,
+        mut to_delete: SelectionUnbound,
         line_length: L,
     ) {
         let (from, to) = to_delete.get_bounds();
@@ -252,10 +226,11 @@ impl SelectionStorage {
         if lines_delta > 0 {
             let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
 
-            let (selections_after, others): (Vec<SelectionRaw>, Vec<SelectionRaw>) = selections_old
-                .into_iter()
-                .map(|x| x.0)
-                .partition(|x| x.from > to_delete.to);
+            let (selections_after, others): (Vec<SelectionUnbound>, Vec<SelectionUnbound>) =
+                selections_old
+                    .into_iter()
+                    .map(|x| x.0)
+                    .partition(|x| x.from > to_delete.to);
 
             let mut selections_after_iter = selections_after.into_iter();
             if let Some(mut first_after) = selections_after_iter.next() {
@@ -277,38 +252,28 @@ impl SelectionStorage {
 
     /// Place a new selection under each existing one with the same columns if it will fit the line.
     /// If the next line is too short to put a selection then it will use matching subsequent line.
-    pub(crate) fn place_selection_under<L: LineLength + Clone>(
-        &mut self,
+    pub(crate) fn place_selection_under<'a, 'b: 'a, L: LineLength + Clone>(
+        &'a mut self,
         line_length: L,
-    ) -> impl FnOnce(&Buffer) -> Vec<Delta> {
-        let mut new_selections = Vec::new();
+    ) -> Vec<DeltaType<'b>> {
         let selections_old = std::mem::replace(&mut self.selections_tree, BTreeSet::new());
+        let mut unbound_deltas = Vec::with_capacity(selections_old.len());
         for s in selections_old.into_iter().map(|x| x.0) {
             if let Some(selection_under) = s.create_selection_under(line_length.clone()) {
                 if self.main_selection_ptr == s.from {
                     self.main_selection_ptr = selection_under.from;
                     // TODO: Delta for changed main selection
                 }
-                self.add_selection(selection_under.clone());
-                new_selections.push(selection_under);
+                unbound_deltas.extend(self.add_selection(selection_under));
             }
             self.add_selection(s);
         }
-        move |buffer| {
-            new_selections
-                .into_iter()
-                .map(
-                    |s| todo!(), //  Delta::SelectionAdded {
-                                 //     selection: s.binded(buffer),
-                                 // }
-                )
-                .collect()
-        }
+        unbound_deltas
     }
 
     /// Find a selection that overlaps with the input selection and replace it.
     /// Used to shrink the selection to be cursor-sized.
-    pub(crate) fn replace_selection(&mut self, to: SelectionRaw) {
+    pub(crate) fn replace_selection(&mut self, to: SelectionUnbound) {
         // TODO: perhaps we need some check here to verify that a replaced
         // selection won't overlap the next one
         self.selections_tree.replace(SelectionIntersect(to));
@@ -369,9 +334,9 @@ impl SelectionStorage {
     // Test related stuff:
 
     #[cfg(test)]
-    fn find_hit(&self, s: PositionRaw) -> Option<&SelectionRaw> {
+    fn find_hit(&self, s: PositionUnbound) -> Option<&SelectionUnbound> {
         self.selections_tree
-            .get(&SelectionRaw::from(s).into())
+            .get(&SelectionUnbound::from(s).into())
             .map(|si| &si.0)
     }
 
@@ -380,7 +345,7 @@ impl SelectionStorage {
         let mut storage = SelectionStorage::new();
         let mut tree = BTreeSet::new();
         for s in selections {
-            tree.insert(SelectionIntersect(SelectionRaw::new_quick(
+            tree.insert(SelectionIntersect(SelectionUnbound::new_quick(
                 s.0,
                 s.1,
                 s.2,
@@ -398,13 +363,13 @@ impl SelectionStorage {
     }
 }
 
-impl From<SelectionRaw> for SelectionIntersect {
-    fn from(selection: SelectionRaw) -> Self {
+impl From<SelectionUnbound> for SelectionIntersect {
+    fn from(selection: SelectionUnbound) -> Self {
         SelectionIntersect(selection)
     }
 }
 
-impl From<SelectionIntersect> for SelectionRaw {
+impl From<SelectionIntersect> for SelectionUnbound {
     fn from(selection_intersect: SelectionIntersect) -> Self {
         selection_intersect.0
     }
@@ -420,7 +385,7 @@ impl From<SelectionIntersect> for SelectionRaw {
 /// `BTreeSet` search and will be valid only within storage's `add_selection`
 /// implementation, which handles this case manually.
 #[derive(Debug)]
-pub(crate) struct SelectionIntersect(pub(crate) SelectionRaw);
+pub(crate) struct SelectionIntersect(pub(crate) SelectionUnbound);
 
 impl Eq for SelectionIntersect {}
 
@@ -456,9 +421,10 @@ impl Ord for SelectionIntersect {
 #[cfg(test)]
 impl PartialEq for SelectionStorage {
     fn eq(&self, rhs: &Self) -> bool {
-        let self_vec: Vec<SelectionRaw> =
+        let self_vec: Vec<SelectionUnbound> =
             self.selections_tree.iter().map(|x| x.0.clone()).collect();
-        let rhs_vec: Vec<SelectionRaw> = rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
+        let rhs_vec: Vec<SelectionUnbound> =
+            rhs.selections_tree.iter().map(|x| x.0.clone()).collect();
         self_vec == rhs_vec
     }
 }

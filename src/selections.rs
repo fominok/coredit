@@ -9,7 +9,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub struct Position<'a> {
     /// Internal raw position
-    pub(crate) position: PositionRaw,
+    pub(crate) position: PositionUnbound,
     /// Buffer reference required for line lengths
     pub(crate) buffer: &'a Buffer,
 }
@@ -70,14 +70,14 @@ impl Position<'_> {
 /// A position in a text buffer represented by 1-based numbered
 /// line and column
 #[derive(PartialOrd, PartialEq, Ord, Eq, Default, Debug, Clone, Copy)]
-pub(crate) struct PositionRaw {
+pub struct PositionUnbound {
     /// One-indexed line
-    pub(crate) line: PositiveUsize,
+    pub line: PositiveUsize,
     /// One-indexed column
-    pub(crate) col: PositiveUsize,
+    pub col: PositiveUsize,
 }
 
-impl PositionRaw {
+impl PositionUnbound {
     /// Build a binded position
     pub(crate) fn binded(self, buffer: &Buffer) -> Position {
         Position {
@@ -95,13 +95,13 @@ impl PositionRaw {
             if lines_count == self.line.get() {
                 None
             } else {
-                Some(PositionRaw {
+                Some(PositionUnbound {
                     col: 1.into(),
                     line: self.line + 1.into(),
                 })
             }
         } else {
-            Some(PositionRaw {
+            Some(PositionUnbound {
                 col: self.col + 1.into(),
                 line: self.line,
             })
@@ -113,7 +113,7 @@ impl PositionRaw {
     pub(crate) fn predecessor<L: LineLength>(&self, line_length: L) -> Option<Self> {
         if self.col.get() == 1 {
             if let Some(length) = line_length.line_length(self.line.get() - 1) {
-                Some(PositionRaw {
+                Some(PositionUnbound {
                     line: self.line - 1.into(),
                     col: length.into(),
                 })
@@ -121,7 +121,7 @@ impl PositionRaw {
                 None
             }
         } else {
-            Some(PositionRaw {
+            Some(PositionUnbound {
                 col: self.col - 1.into(),
                 line: self.line,
             })
@@ -168,7 +168,7 @@ impl CursorDirection {
 #[derive(Debug, Clone)]
 pub struct Selection<'a> {
     /// Inner selection
-    pub(crate) selection: SelectionRaw,
+    pub(crate) selection: SelectionUnbound,
     /// Link to the buffer
     pub(crate) buffer: &'a Buffer,
 }
@@ -211,11 +211,11 @@ impl<'a> Selection<'a> {
 /// Selection is as pair of positions, which are pairs of line/column values with
 /// a cursor in the beginning or in the end.
 #[derive(Default, Debug, PartialEq, Clone)]
-pub(crate) struct SelectionRaw {
+pub struct SelectionUnbound {
     /// One of the selection's ends nearest to the buffer's beginning
-    pub from: PositionRaw,
+    pub from: PositionUnbound,
     /// One of the selection's ends nearest to the buffer's end
-    pub to: PositionRaw,
+    pub to: PositionUnbound,
     /// One of the selection's ends is marked as a "cursor", if it's on the right,
     /// then selection's cursor direction is `Forward`.
     pub cursor_direction: CursorDirection,
@@ -228,7 +228,7 @@ pub(crate) struct SelectionRaw {
     pub(crate) sticky_column: Option<PositiveUsize>,
 }
 
-impl SelectionRaw {
+impl SelectionUnbound {
     /// Build a binded selection
     pub(crate) fn binded(self, buffer: &Buffer) -> Selection {
         Selection {
@@ -289,7 +289,7 @@ impl SelectionRaw {
     }
 
     /// Get cursor reference
-    pub(crate) fn get_cursor(&self) -> &PositionRaw {
+    pub(crate) fn get_cursor(&self) -> &PositionUnbound {
         match self.cursor_direction {
             CursorDirection::Forward => &self.to,
             CursorDirection::Backward => &self.from,
@@ -297,12 +297,12 @@ impl SelectionRaw {
     }
 
     /// Get positions pair references
-    pub(crate) fn get_bounds(&self) -> (PositionRaw, PositionRaw) {
+    pub(crate) fn get_bounds(&self) -> (PositionUnbound, PositionUnbound) {
         (self.from, self.to)
     }
 
     /// Get cursor mutable reference for inplace operations
-    pub(crate) fn get_cursor_mut(&mut self) -> &mut PositionRaw {
+    pub(crate) fn get_cursor_mut(&mut self) -> &mut PositionUnbound {
         match self.cursor_direction {
             CursorDirection::Forward => &mut self.to,
             CursorDirection::Backward => &mut self.from,
@@ -488,11 +488,11 @@ impl SelectionRaw {
             if let Some(length_from) = line_length.line_length(line_idx - width) {
                 if length_from >= self.from.col.get() && length_to >= self.to.col.get() {
                     return Some(Self {
-                        from: PositionRaw {
+                        from: PositionUnbound {
                             line: (line_idx - width).into(),
                             col: self.from.col,
                         },
-                        to: PositionRaw {
+                        to: PositionUnbound {
                             line: line_idx.into(),
                             col: self.to.col,
                         },
@@ -518,11 +518,11 @@ impl SelectionRaw {
         cursor_direction: CursorDirection,
     ) -> Self {
         Self {
-            from: PositionRaw {
+            from: PositionUnbound {
                 line: head_line.into(),
                 col: head_col.into(),
             },
-            to: PositionRaw {
+            to: PositionUnbound {
                 line: tail_line.into(),
                 col: tail_col.into(),
             },
@@ -567,9 +567,9 @@ impl SelectionRaw {
 
 /// Selection of length 1 is simply a cursor thus can be
 /// created from [Position](../struct.Position.html) of it
-impl<'a> From<PositionRaw> for SelectionRaw {
-    fn from(position: PositionRaw) -> Self {
-        SelectionRaw {
+impl<'a> From<PositionUnbound> for SelectionUnbound {
+    fn from(position: PositionUnbound) -> Self {
+        SelectionUnbound {
             from: position,
             to: position,
             cursor_direction: CursorDirection::Forward,

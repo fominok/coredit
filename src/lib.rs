@@ -6,8 +6,8 @@ mod util;
 pub use buffer::Buffer;
 pub use ropey::Rope;
 pub use selections::CursorDirection;
-use selections::{PositionRaw, SelectionRaw};
 pub use selections::{Position, Selection};
+use selections::{PositionUnbound, SelectionUnbound};
 use std::io;
 
 /// Crate's error type
@@ -51,27 +51,27 @@ impl<T: LineLength + ?Sized> LineLength for &T {
 /// Buffer's feedback for optimal redraws or any other case when full buffer
 /// contents not needed
 #[derive(Debug, PartialEq)]
-pub struct Delta<'a> {
-    buffer: &'a Buffer,
-    delta_type: DeltaType<'a>,
+pub struct Delta<'a, 'b> {
+    pub buffer: &'a Buffer,
+    pub delta_type: DeltaType<'b>,
 }
 
 #[derive(Debug, PartialEq)]
-enum DeltaType<'a> {
+pub enum DeltaType<'a> {
     /// A selection identifiable by `old` moved into `new` state
     SelectionChanged {
-        identity: PositionRaw,
-        new_state: SelectionRaw,
+        identity: PositionUnbound,
+        new_state: SelectionUnbound,
     },
     /// New selection added
     SelectionAdded {
         /// New selection
-        selection: SelectionRaw,
+        selection: SelectionUnbound,
     },
     /// Selection was deleted
     SelectionDeleted {
         /// Deleted selection info
-        identity: PositionRaw,
+        identity: PositionUnbound,
     },
     /// Line's contents changed
     LineChanged {
@@ -80,6 +80,19 @@ enum DeltaType<'a> {
         /// Line new content
         content: &'a str,
     },
+}
+
+impl<'b> DeltaType<'b> {
+    pub fn bind<'a>(self, buffer: &'a Buffer) -> Delta<'a, 'b> {
+        Delta {
+            buffer,
+            delta_type: self,
+        }
+    }
+
+    pub fn bind_vec<'a>(v: Vec<DeltaType<'b>>, buffer: &'a Buffer) -> Vec<Delta<'a, 'b>> {
+        v.into_iter().map(|x| x.bind(buffer)).collect()
+    }
 }
 
 #[cfg(test)]
