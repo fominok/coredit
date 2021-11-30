@@ -65,26 +65,88 @@ impl SelectionStorage {
     /// tail.
     pub(crate) fn add_selection<'a, 'b: 'a>(
         &'a mut self,
-        ns: SelectionUnbound,
+        mut ns: SelectionUnbound,
     ) -> Vec<DeltaType<'b>> {
-        if let Some(mut s) = self.find_hit_take(ns.from) {
-            if self.main_selection_ptr == ns.from {
-                self.main_selection_ptr = s.from;
+        match (self.find_hit_take(ns.from), self.find_hit_take(ns.to)) {
+            (None, None) => {
+                // No intersections
+                self.selections_tree.insert(ns.clone().into());
+                vec![DeltaType::SelectionAdded { selection: ns }]
             }
-            s.to = ns.to;
-            // Here is a recursive call to verify that the new selection
-            // has no overlaps
-            self.add_selection(s);
-        } else if let Some(mut s) = self.find_hit_take(ns.to) {
-            if self.main_selection_ptr == s.from {
-                self.main_selection_ptr = ns.from;
+            (Some(mut s), None) => {
+                // Intersection on `from`
+                if self.main_selection_ptr == ns.from {
+                    self.main_selection_ptr = s.from;
+                }
+                s.to = ns.to;
+                self.add_selection(s.clone());
+                vec![
+                    DeltaType::SelectionChanged {
+                        identity: s.from,
+                        new_state: s,
+                    },
+                    DeltaType::SelectionDeleted { identity: ns.from },
+                ]
             }
-            s.from = ns.from;
-            self.add_selection(s);
-        } else {
-            self.selections_tree.insert(ns.into());
+            (None, Some(s)) => {
+                // Intersection on `to` position
+                if self.main_selection_ptr == s.from {
+                    self.main_selection_ptr = ns.from;
+                }
+                ns.to = s.to;
+                self.add_selection(ns.clone());
+                vec![
+                    DeltaType::SelectionChanged {
+                        identity: ns.from,
+                        new_state: ns,
+                    },
+                    DeltaType::SelectionDeleted { identity: s.from },
+                ]
+            }
+            (Some(mut s1), Some(s2)) => {
+                // Intersection on both ends
+                if self.main_selection_ptr == s1.from {
+                    self.main_selection_ptr = ns.from;
+                }
+                s1.to = s2.to;
+                self.add_selection(s1.clone());
+                vec![
+                    DeltaType::SelectionChanged {
+                        identity: s1.from,
+                        new_state: s1
+                    },
+                    DeltaType::SelectionDeleted {
+                        identity: s2.from
+                    },
+                    DeltaType::SelectionDeleted {
+                        identity: ns.from
+                    }
+                ]
+            }
         }
-        todo!()
+        // if let Some(mut s) = self.find_hit_take(ns.from) {
+        //     // Intersection on `from` position
+        //     if self.main_selection_ptr == ns.from {
+        //         self.main_selection_ptr = s.from;
+        //     }
+        //     s.to = ns.to;
+        //     // Here is a recursive call to verify that the new selection
+        //     // has no overlaps
+        //     self.add_selection(s);
+        //     todo!()
+        // } else if let Some(mut s) = self.find_hit_take(ns.to) {
+        //     // Intersection on `to` position
+        //     if self.main_selection_ptr == s.from {
+        //         self.main_selection_ptr = ns.from;
+        //     }
+        //     s.from = ns.from;
+        //     self.add_selection(s);
+        //     todo!()
+        // } else {
+        //     // No intersections
+        //     self.selections_tree.insert(ns.clone().into());
+        //     vec![DeltaType::SelectionAdded { selection: ns }]
+        // }
     }
 
     /// Finds a selection which covers input position and moves it out of the storage.
